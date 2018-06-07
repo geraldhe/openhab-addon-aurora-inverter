@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="aurorainverter"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="inverter">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="bridge" />
+		</supported-bridge-type-refs>
+
+		<label>Aurora Inverter</label>
+		<description>A single Aurora Inverter Device</description>
+
+		<channels>
+			<channel id="cumulatedEnergyDaily" typeId="cumulated-energy-daily-channel" />
+			<channel id="cumulatedEnergyLast7Days" typeId="cumulated-energy-last7days-channel" />
+			<channel id="cumulatedEnergyMonthly" typeId="cumulated-energy-monthly-channel" />
+			<channel id="cumulatedEnergyPartial" typeId="cumulated-energy-partial-channel" />
+			<channel id="cumulatedEnergyTotal" typeId="cumulated-energy-total-channel" />
+			<channel id="cumulatedEnergyWeekly" typeId="cumulated-energy-weekly-channel" />
+			<channel id="cumulatedEnergyYearly" typeId="cumulated-energy-yearly-channel" />
+
+			<channel id="alimTemperatureCentral" typeId="alim-temperature-central-channel" />
+			<channel id="avgGridVoltage" typeId="average-grid-voltage-channel" />
+			<channel id="boosterTemperatureGridTied" typeId="booster-temperature-grid-tied-channel" />
+			<channel id="fan1SpeedCentral" typeId="fan1-speed-central-channel" />
+			<channel id="fan1SpeedRpmCentral" typeId="fan1-speed-rpm-central-channel" />
+			<channel id="fan2SpeedCentral" typeId="fan2-speed-central-channel" />
+			<channel id="fan2SpeedRpmCentral" typeId="fan2-speed-rpm-central-channel" />
+			<channel id="fan3SpeedCentral" typeId="fan3-speed-central-channel" />
+			<channel id="fan3SpeedRpmCentral" typeId="fan3-speed-rpm-central-channel" />
+			<channel id="fan4SpeedCentral" typeId="fan4-speed-central-channel" />
+			<channel id="fan4SpeedRpmCentral" typeId="fan4-speed-rpm-central-channel" />
+			<channel id="fan5SpeedCentral" typeId="fan5-speed-central-channel" />
+			<channel id="fan5SpeedRpmCentral" typeId="fan5-speed-rpm-central-channel" />
+			<channel id="fan6SpeedRpmCentral" typeId="fan6-speed-rpm-central-channel" />
+			<channel id="fan7SpeedRpmCentral" typeId="fan7-speed-rpm-central-channel" />
+			<channel id="frequencyAll" typeId="frequency-all-channel" />
+			<channel id="frequencyPhaseRCentralAnd3Phase" typeId="frequency-phase-r-central-and-3phase-channel" />
+			<channel id="frequencyPhaseSCentralAnd3Phase" typeId="frequency-phase-s-central-and-3phase-channel" />
+			<channel id="frequencyPhaseTCentralAnd3Phase" typeId="frequency-phase-t-central-and-3phase-channel" />
+			<channel id="gridCurrentAll" typeId="grid-current-all-channel" />
+			<channel id="gridCurrentPhaseRCentralAnd3Phase" typeId="grid-current-phase-r-central-and-3phase-channel" />
+			<channel id="gridCurrentPhaseSCentralAnd3Phase" typeId="grid-current-phase-s-central-and-3phase-channel" />
+			<channel id="gridCurrentPhaseTCentralAnd3Phase" typeId="grid-current-phase-t-central-and-3phase-channel" />
+			<channel id="gridFrequency" typeId="grid-frequency-channel" />
+			<channel id="gridPowerAll" typeId="grid-power-all-channel" />
+			<channel id="gridVoltage" typeId="voltage-channel" />
+			<channel id="gridVoltageAll" typeId="voltage-all-channel" />
+			<channel id="gridVoltageNeutralGridTied" typeId="grid-voltage-neutral-grid-tied-channel" />
+			<channel id="gridVoltageNeutralPhaseCentral" typeId="grid-voltage-neutral-phase-central-channel" />
+			<channel id="gridVoltagePhaseRCentralAnd3Phase" typeId="grid-voltage-phase-r-central-and-3phase-channel" />
+			<channel id="gridVoltagePhaseSCentralAnd3Phase" typeId="grid-voltage-phase-s-central-and-3phase-channel" />
+			<channel id="gridVoltagePhaseTCentralAnd3Phase" typeId="grid-voltage-phase-t-central-and-3phase-channel" />
+			<channel id="heatSinkTemperatureCentral" typeId="heat-sink-temperature-central-channel" />
+			<channel id="ileakDcdc" typeId="ileak-dcdc-channel" />
+			<channel id="ileakInverter" typeId="ileak-inverter-channel" />
+			<channel id="input1Current" typeId="input1-current-channel" />
+			<channel id="input1Voltage" typeId="input1-voltage-channel" />
+			<channel id="input2Current" typeId="input2-current-channel" />
+			<channel id="input2Voltage" typeId="input2-voltage-channel" />
+			<channel id="inverterTemperatureGridTied" typeId="inverter-temperature-grid-tied-channel" />
+			<channel id="isolationResistanceAll" typeId="isolation-resistance-all-channel" />
+			<channel id="pin1InputPower" typeId="pin1-channel" />
+			<channel id="pin2InputPower" typeId="pin2-channel" />
+			<channel id="powerPeakAll" typeId="power-peak-all-channel" />
+			<channel id="powerPeakTodayAl" typeId="power-peak-today-al-channel" />
+			<channel id="powerSaturationLimitDerCentral" typeId="power-saturation-limit-der-central-channel" />
+			<channel id="referenceRingBulkCentral" typeId="reference-ring-bulk-central-channel" />
+			<channel id="supervisorTemperatureCentral" typeId="supervisor-temperature-central-channel" />
+			<channel id="temperature1Central" typeId="temperature-1-central-channel" />
+			<channel id="temperature2Central" typeId="temperature-2-central-channel" />
+			<channel id="temperature3Central" typeId="temperature-3-central-channel" />
+			<channel id="vbulkGrid" typeId="vbulk-grid-channel" />
+			<channel id="vbulkIleakDcdc" typeId="vbulk-ileak-dcdc-channel" />
+			<channel id="vbulkMidGridTied" typeId="vbulk-mid-grid-tied-channel" />
+			<channel id="vbulkMinusCentral" typeId="vbulk-minus-central-channel" />
+			<channel id="vbulkPlusCentralAnd3Phase" typeId="vbulk-plus-central-and-3phase-channel" />
+			<channel id="vpanelMicroCentral" typeId="vpanel-micro-central-channel" />
+			<channel id="windGeneratorFrequency" typeId="wind-generator-frequency-channel" />
+		</channels>
+
+		<config-description>
+			<parameter name="inverterAddress" type="integer" required="true">
+				<label>Inverter address</label>
+				<description>address of the inverter</description>
+				<default>2</default>
+			</parameter>
+			<parameter name="refreshRate" type="integer" required="true">
+				<label>Refresh rate</label>
+				<description>refresh rate in seconds (e.g. 30)</description>
+				<default>30</default>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<channel-type id="cumulated-energy-daily-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Daily</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-last7days-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Last 7 days</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-monthly-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Monthly</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-partial-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Partial</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-total-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Total</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-weekly-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Weekly</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="cumulated-energy-yearly-channel">
+		<item-type>Number:Energy</item-type>
+		<label>Cumulated Energy: Yearly</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="alim-temperature-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>Alim Temperature Central</label>
+		<description>Temperature</description>
+		<category>Temperature</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="average-grid-voltage-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Average Grid Voltage</label>
+		<description>Voltage</description>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="booster-temperature-grid-tied-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>Booster Temparature Grid Tied</label>
+		<category>Temperature</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan1-speed-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 1: Speed central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan1-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 1: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan2-speed-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 2: Speed central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan2-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 2: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan3-speed-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 3: Speed central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan3-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 3: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan4-speed-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 4: Speed central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan4-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 4: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan5-speed-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 5: Speed central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan5-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 5: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan6-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 6: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="fan7-speed-rpm-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan 7: Speed rpm central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="frequency-all-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>Frequency: All Channel</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="frequency-phase-r-central-and-3phase-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>Frequency: Phase R central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="frequency-phase-s-central-and-3phase-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>Frequency: Phase S central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="frequency-phase-t-central-and-3phase-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>Frequency: Phase T central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-current-all-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>Grid: Current all</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-current-phase-r-central-and-3phase-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>Grid: Current phase R central and 3phase</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-current-phase-s-central-and-3phase-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>Grid: Current phase S central and 3phase</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-current-phase-t-central-and-3phase-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>Grid: Current phase T central and 3phase</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-frequency-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>Grid: Frequency</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-power-all-channel">
+		<item-type>Number:Power</item-type>
+		<label>Grid: Power (all)</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="voltage-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Voltage</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="voltage-all-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Voltage (all channel)</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-voltage-neutral-grid-tied-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Grid: Voltage neutral grid tied</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-voltage-neutral-phase-central-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Grid: Voltage neutral phase central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-voltage-phase-r-central-and-3phase-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Grid: Voltage phase R central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-voltage-phase-s-central-and-3phase-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Grid: Voltage phase S central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="grid-voltage-phase-t-central-and-3phase-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Grid: Voltage phase T central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="heat-sink-temperature-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>Heat sink temperature central</label>
+		<category>Temperature</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="ileak-dcdc-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>ileak dcdc</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="ileak-inverter-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>ileak inverter</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="input1-current-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>input1: current</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="input1-voltage-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>input1: voltage</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="input2-current-channel">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>input2: current</label>
+		<category>ElectricCurrent</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="input2-voltage-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>input2: voltage</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="inverter-temperature-grid-tied-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>inverter temperature grid tied</label>
+		<category>Temperature</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="isolation-resistance-all-channel">
+		<item-type>Number:ElectricResistance</item-type>
+		<label>isolation resistance all</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="pin1-channel">
+		<item-type>Number:Power</item-type>
+		<label>pin1</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="pin2-channel">
+		<item-type>Number:Power</item-type>
+		<label>pin2</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="power-peak-all-channel">
+		<item-type>Number:Power</item-type>
+		<label>power peak all</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="power-peak-today-al-channel">
+		<item-type>Number:Power</item-type>
+		<label>power peak today al</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="power-saturation-limit-der-central-channel">
+		<item-type>Number:Power</item-type>
+		<label>power saturation limit der central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="reference-ring-bulk-central-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>reference ring bulk central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="supervisor-temperature-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>supervisor temperature central</label>
+		<category>Temperature</category>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="temperature-1-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>temperature 1 central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="temperature-2-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>temperature 2 central</label>
+
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="temperature-3-central-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>temperature 3 central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vbulk-grid-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>vbulk grid</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vbulk-ileak-dcdc-channel">
+		<item-type>Number:Dimensionless</item-type>
+		<label>vbulk ileak dcdc</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vbulk-mid-grid-tied-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>vbulk mid grid tied</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vbulk-minus-central-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>vbulk minus central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vbulk-plus-central-and-3phase-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>vbulk plus central and 3phase</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="vpanel-micro-central-channel">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>vpanel micro central</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="wind-generator-frequency-channel">
+		<item-type>Number:Frequency</item-type>
+		<label>wind generator frequency</label>
+		<state readOnly="true" pattern="%.1f %unit%" />
+	</channel-type>
+</thing:thing-descriptions>
