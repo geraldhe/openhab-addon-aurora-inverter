@@ -37,7 +37,7 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
     // private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     // private Calendar nextPossibleConnectionRetry;
 
-    private AuroraDriver auroraDrv;
+    protected AuroraDriver auroraDrv;
 
     @Nullable
     private SerialPort serialPort;

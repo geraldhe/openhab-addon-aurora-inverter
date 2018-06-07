@@ -9,13 +9,24 @@
 package org.openhab.binding.aurorainverter.handler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.eclipse.smarthome.core.library.unit.MetricPrefix.MEGA;
+import static org.openhab.binding.aurorainverter.AuroraInverterBindingConstants.*;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+
+import javax.measure.quantity.Dimensionless;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.QuantityType;
+import org.eclipse.smarthome.core.library.unit.SIUnits;
+import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -25,6 +36,18 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.aurorainverter.internal.AuroraInverterInverterConfiguration;
+import org.openhab.binding.aurorainverter.internal.jaurlib.AuroraDriver;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraDspRequestEnum;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_CumulatedEnergy;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_DspData;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_FwVersion;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_MFGdate;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_ProductNumber;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_SerialNumber;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AResp_VersionId;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraResponse;
+import org.openhab.binding.aurorainverter.internal.jaurlib.response.ResponseErrorEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +62,7 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(AuroraInverterInverterHandler.class);
 
-    // private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     protected final List<ChannelUID> measuredChannels = new ArrayList<ChannelUID>();
 
@@ -50,7 +73,7 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         }
     };
 
-    // private final Map<String, AuroraDspRequestEnum> map = new HashMap<String, AuroraDspRequestEnum>();
+    private final Map<String, AuroraDspRequestEnum> map = new HashMap<String, AuroraDspRequestEnum>();
 
     private AuroraInverterInverterConfiguration config;
 
@@ -65,82 +88,82 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
         this.config = new AuroraInverterInverterConfiguration();
 
-        // this.map.put(CHANNEL_ALIM_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.ALIM_TEMPERATURE_CENTRAL);
-        // this.map.put(CHANNEL_AVG_GRID_VOLTAGE, AuroraDspRequestEnum.AVERAGE_GRID_VOLTAGE);
-        // this.map.put(CHANNEL_BOOSTER_TEMPERATURE_GRID_TIED, AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
-        // this.map.put(CHANNEL_FAN_1_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_1_SPEED_CENTRAL);
-        // this.map.put(CHANNEL_FAN_1_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_1_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_2_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_2_SPEED_CENTRAL);
-        // this.map.put(CHANNEL_FAN_2_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_2_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_3_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_3_SPEED_CENTRAL);
-        // this.map.put(CHANNEL_FAN_3_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_3_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_4_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_4_SPEED_CENTRAL);
-        // this.map.put(CHANNEL_FAN_4_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_4_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_5_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_5_SPEED_CENTRAL);
-        // this.map.put(CHANNEL_FAN_5_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_5_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_6_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_6_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FAN_7_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_7_SPEED_RPM_CENTRAL);
-        // this.map.put(CHANNEL_FREQUENCY_ALL, AuroraDspRequestEnum.FREQUENCY_ALL);
-        // this.map.put(CHANNEL_FREQUENCY_PHASE_R_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.FREQUENCY_PHASE_R_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_FREQUENCY_PHASE_S_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.FREQUENCY_PHASE_S_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_FREQUENCY_PHASE_T_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.FREQUENCY_PHASE_T_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_CURRENT_ALL, AuroraDspRequestEnum.GRID_CURRENT_ALL);
-        // this.map.put(CHANNEL_GRID_CURRENT_PHASE_R_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_CURRENT_PHASE_R_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_CURRENT_PHASE_S_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_CURRENT_PHASE_S_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_CURRENT_PHASE_T_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_CURRENT_PHASE_T_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_FREQUENCY, AuroraDspRequestEnum.GRID_FREQUENCY);
-        // this.map.put(CHANNEL_GRID_POWER_ALL, AuroraDspRequestEnum.GRID_POWER_ALL);
-        // this.map.put(CHANNEL_GRID_VOLTAGE, AuroraDspRequestEnum.GRID_VOLTAGE);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_ALL, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_NEUTRAL_GRID_TIED, AuroraDspRequestEnum.GRID_VOLTAGE_NEUTRAL_GRID_TIED);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_NEUTRAL_PHASE_CENTRAL,
-        // AuroraDspRequestEnum.GRID_VOLTAGE_NEUTRAL_PHASE_CENTRAL);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_R_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_R_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_S_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_S_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_T_CENTRAL_AND_3_PHASE,
-        // AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_T_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_HEAK_SINK_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.HEAK_SINK_TEMPERATURE_CENTRAL);
-        // this.map.put(CHANNEL_ILEAK_DCDC, AuroraDspRequestEnum.ILEAK_DCDC);
-        // this.map.put(CHANNEL_ILEAK_INVERTER, AuroraDspRequestEnum.ILEAK_INVERTER);
-        // this.map.put(CHANNEL_INPUT_1_CURRENT, AuroraDspRequestEnum.INPUT_1_CURRENT);
-        // this.map.put(CHANNEL_INPUT_1_VOLTAGE, AuroraDspRequestEnum.INPUT_1_VOLTAGE);
-        // this.map.put(CHANNEL_INPUT_2_CURRENT, AuroraDspRequestEnum.INPUT_2_CURRENT);
-        // this.map.put(CHANNEL_INPUT_2_VOLTAGE, AuroraDspRequestEnum.INPUT_2_VOLTAGE);
-        // this.map.put(CHANNEL_INVERTER_TEMPERATURE_GRID_TIED, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-        // this.map.put(CHANNEL_ISOLATION_RESISTANCE_ALL, AuroraDspRequestEnum.ISOLATION_RESISTANCE_ALL);
-        // this.map.put(CHANNEL_PIN_1_INPUT_POWER, AuroraDspRequestEnum.PIN_1);
-        // this.map.put(CHANNEL_PIN_2_INPUT_POWER, AuroraDspRequestEnum.PIN_2);
-        // this.map.put(CHANNEL_POWER_PEAK_ALL, AuroraDspRequestEnum.POWER_PEAK_ALL);
-        // this.map.put(CHANNEL_POWER_PEAK_TODAY_AL, AuroraDspRequestEnum.POWER_PEAK_TODAY_AL);
-        // this.map.put(CHANNEL_POWER_SATURATION_LIMIT_DER_CENTRAL,
-        // AuroraDspRequestEnum.POWER_SATURATION_LIMIT_DER_CENTRAL);
-        // this.map.put(CHANNEL_REFERENCE_RING_BULK_CENTRAL, AuroraDspRequestEnum.REFERENCE_RING_BULK_CENTRAL);
-        // this.map.put(CHANNEL_SUPERVISOR_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.SUPERVISOR_TEMPERATURE_CENTRAL);
-        //
-        // this.map.put(CHANNEL_TEMPERATURE_1_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_1_CENTRAL);
-        // this.map.put(CHANNEL_TEMPERATURE_2_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_2_CENTRAL);
-        // this.map.put(CHANNEL_TEMPERATURE_3_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_3_CENTRAL);
-        // this.map.put(CHANNEL_VBULK_GRID, AuroraDspRequestEnum.VBULK_GRID);
-        // this.map.put(CHANNEL_VBULK_ILEAK_DCDC, AuroraDspRequestEnum.VBULK_ILEAK_DCDC);
-        // this.map.put(CHANNEL_VBULK_MID_GRID_TIED, AuroraDspRequestEnum.VBULK_MID_GRID_TIED);
-        // this.map.put(CHANNEL_VBULK_MINUS_CENTRAL, AuroraDspRequestEnum.VBULK_MINUS_CENTRAL);
-        // this.map.put(CHANNEL_VBULK_PLUS_CENTRAL_AND_3_PHASE, AuroraDspRequestEnum.VBULK_PLUS_CENTRAL_AND_3_PHASE);
-        // this.map.put(CHANNEL_VPANEL_MICRO_CENTRAL, AuroraDspRequestEnum.VPANEL_MICRO_CENTRAL);
-        // this.map.put(CHANNEL_WIND_GENERATOR_FREQUENCY, AuroraDspRequestEnum.WIND_GENERATOR_FREQUENCY);
+        this.map.put(CHANNEL_ALIM_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.ALIM_TEMPERATURE_CENTRAL);
+        this.map.put(CHANNEL_AVG_GRID_VOLTAGE, AuroraDspRequestEnum.AVERAGE_GRID_VOLTAGE);
+        this.map.put(CHANNEL_BOOSTER_TEMPERATURE_GRID_TIED, AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
+        this.map.put(CHANNEL_FAN_1_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_1_SPEED_CENTRAL);
+        this.map.put(CHANNEL_FAN_1_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_1_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_2_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_2_SPEED_CENTRAL);
+        this.map.put(CHANNEL_FAN_2_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_2_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_3_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_3_SPEED_CENTRAL);
+        this.map.put(CHANNEL_FAN_3_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_3_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_4_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_4_SPEED_CENTRAL);
+        this.map.put(CHANNEL_FAN_4_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_4_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_5_SPEED_CENTRAL, AuroraDspRequestEnum.FAN_5_SPEED_CENTRAL);
+        this.map.put(CHANNEL_FAN_5_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_5_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_6_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_6_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FAN_7_SPEED_RPM_CENTRAL, AuroraDspRequestEnum.FAN_7_SPEED_RPM_CENTRAL);
+        this.map.put(CHANNEL_FREQUENCY_ALL, AuroraDspRequestEnum.FREQUENCY_ALL);
+        this.map.put(CHANNEL_FREQUENCY_PHASE_R_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.FREQUENCY_PHASE_R_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_FREQUENCY_PHASE_S_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.FREQUENCY_PHASE_S_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_FREQUENCY_PHASE_T_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.FREQUENCY_PHASE_T_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_CURRENT_ALL, AuroraDspRequestEnum.GRID_CURRENT_ALL);
+        this.map.put(CHANNEL_GRID_CURRENT_PHASE_R_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_CURRENT_PHASE_R_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_CURRENT_PHASE_S_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_CURRENT_PHASE_S_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_CURRENT_PHASE_T_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_CURRENT_PHASE_T_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_FREQUENCY, AuroraDspRequestEnum.GRID_FREQUENCY);
+        this.map.put(CHANNEL_GRID_POWER_ALL, AuroraDspRequestEnum.GRID_POWER_ALL);
+        this.map.put(CHANNEL_GRID_VOLTAGE, AuroraDspRequestEnum.GRID_VOLTAGE);
+        this.map.put(CHANNEL_GRID_VOLTAGE_ALL, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
+        this.map.put(CHANNEL_GRID_VOLTAGE_NEUTRAL_GRID_TIED, AuroraDspRequestEnum.GRID_VOLTAGE_NEUTRAL_GRID_TIED);
+        this.map.put(CHANNEL_GRID_VOLTAGE_NEUTRAL_PHASE_CENTRAL,
+                AuroraDspRequestEnum.GRID_VOLTAGE_NEUTRAL_PHASE_CENTRAL);
+        this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_R_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_R_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_S_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_S_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_GRID_VOLTAGE_PHASE_T_CENTRAL_AND_3_PHASE,
+                AuroraDspRequestEnum.GRID_VOLTAGE_PHASE_T_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_HEAK_SINK_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.HEAK_SINK_TEMPERATURE_CENTRAL);
+        this.map.put(CHANNEL_ILEAK_DCDC, AuroraDspRequestEnum.ILEAK_DCDC);
+        this.map.put(CHANNEL_ILEAK_INVERTER, AuroraDspRequestEnum.ILEAK_INVERTER);
+        this.map.put(CHANNEL_INPUT_1_CURRENT, AuroraDspRequestEnum.INPUT_1_CURRENT);
+        this.map.put(CHANNEL_INPUT_1_VOLTAGE, AuroraDspRequestEnum.INPUT_1_VOLTAGE);
+        this.map.put(CHANNEL_INPUT_2_CURRENT, AuroraDspRequestEnum.INPUT_2_CURRENT);
+        this.map.put(CHANNEL_INPUT_2_VOLTAGE, AuroraDspRequestEnum.INPUT_2_VOLTAGE);
+        this.map.put(CHANNEL_INVERTER_TEMPERATURE_GRID_TIED, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
+        this.map.put(CHANNEL_ISOLATION_RESISTANCE_ALL, AuroraDspRequestEnum.ISOLATION_RESISTANCE_ALL);
+        this.map.put(CHANNEL_PIN_1_INPUT_POWER, AuroraDspRequestEnum.PIN_1);
+        this.map.put(CHANNEL_PIN_2_INPUT_POWER, AuroraDspRequestEnum.PIN_2);
+        this.map.put(CHANNEL_POWER_PEAK_ALL, AuroraDspRequestEnum.POWER_PEAK_ALL);
+        this.map.put(CHANNEL_POWER_PEAK_TODAY_AL, AuroraDspRequestEnum.POWER_PEAK_TODAY_AL);
+        this.map.put(CHANNEL_POWER_SATURATION_LIMIT_DER_CENTRAL,
+                AuroraDspRequestEnum.POWER_SATURATION_LIMIT_DER_CENTRAL);
+        this.map.put(CHANNEL_REFERENCE_RING_BULK_CENTRAL, AuroraDspRequestEnum.REFERENCE_RING_BULK_CENTRAL);
+        this.map.put(CHANNEL_SUPERVISOR_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.SUPERVISOR_TEMPERATURE_CENTRAL);
 
-        // for (AuroraDspRequestEnum key : AuroraDspRequestEnum.values()) {
-        // if (!this.map.containsValue(key)) {
-        // logger.error("aurora-library key missing: {}", key);
-        // }
-        // }
+        this.map.put(CHANNEL_TEMPERATURE_1_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_1_CENTRAL);
+        this.map.put(CHANNEL_TEMPERATURE_2_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_2_CENTRAL);
+        this.map.put(CHANNEL_TEMPERATURE_3_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_3_CENTRAL);
+        this.map.put(CHANNEL_VBULK_GRID, AuroraDspRequestEnum.VBULK_GRID);
+        this.map.put(CHANNEL_VBULK_ILEAK_DCDC, AuroraDspRequestEnum.VBULK_ILEAK_DCDC);
+        this.map.put(CHANNEL_VBULK_MID_GRID_TIED, AuroraDspRequestEnum.VBULK_MID_GRID_TIED);
+        this.map.put(CHANNEL_VBULK_MINUS_CENTRAL, AuroraDspRequestEnum.VBULK_MINUS_CENTRAL);
+        this.map.put(CHANNEL_VBULK_PLUS_CENTRAL_AND_3_PHASE, AuroraDspRequestEnum.VBULK_PLUS_CENTRAL_AND_3_PHASE);
+        this.map.put(CHANNEL_VPANEL_MICRO_CENTRAL, AuroraDspRequestEnum.VPANEL_MICRO_CENTRAL);
+        this.map.put(CHANNEL_WIND_GENERATOR_FREQUENCY, AuroraDspRequestEnum.WIND_GENERATOR_FREQUENCY);
+
+        for (AuroraDspRequestEnum key : AuroraDspRequestEnum.values()) {
+            if (!this.map.containsValue(key)) {
+                logger.error("aurora-library key missing: {}", key);
+            }
+        }
     }
 
     @Override
@@ -167,43 +190,40 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         }
 
         try {
-            // AuroraDriver drv = this.bridgeHandler.getDriver();
-            // AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
-            //
-            // logger.debug("Result from inverter: " + respVersion.toString());
-            //
-            // ResponseErrorEnum errorCode = respVersion.getErrorCode();
-            // if (errorCode != ResponseErrorEnum.NONE) {
-            // logger.error("Inverter not online: " + errorCode.toString());
-            // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
-            // return;
-            // }
-            //
-            // Map<String, String> properties = editProperties();
-            // if (respVersion instanceof AResp_VersionId) {
-            // AResp_VersionId respVersionCasted = (AResp_VersionId) respVersion;
-            // properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
-            // properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
-            // properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
-            // properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
-            // }
-            //
-            // AResp_MFGdate respMfgDate = (AResp_MFGdate) drv.acquireMFGdate(config.inverterAddress);
-            // properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
-            //
-            // AResp_ProductNumber respProdNumber = (AResp_ProductNumber)
-            // drv.acquireProductNumber(config.inverterAddress);
-            // properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
-            //
-            // AResp_SerialNumber respSerialNumber = (AResp_SerialNumber)
-            // drv.acquireSerialNumber(config.inverterAddress);
-            // properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
-            //
-            // AResp_FwVersion respFirmwareVersion = (AResp_FwVersion)
-            // drv.acquireFirmwareVersion(config.inverterAddress);
-            // properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
-            //
-            // updateProperties(properties);
+            AuroraDriver drv = this.bridgeHandler.auroraDrv;
+            AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
+
+            logger.debug("Result from inverter: " + respVersion.toString());
+
+            ResponseErrorEnum errorCode = respVersion.getErrorCode();
+            if (errorCode != ResponseErrorEnum.NONE) {
+                logger.error("Inverter not online: " + errorCode.toString());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
+                return;
+            }
+
+            Map<String, String> properties = editProperties();
+            if (respVersion instanceof AResp_VersionId) {
+                AResp_VersionId respVersionCasted = (AResp_VersionId) respVersion;
+                properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
+                properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
+                properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
+                properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
+            }
+
+            AResp_MFGdate respMfgDate = (AResp_MFGdate) drv.acquireMFGdate(config.inverterAddress);
+            properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
+
+            AResp_ProductNumber respProdNumber = (AResp_ProductNumber) drv.acquireProductNumber(config.inverterAddress);
+            properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
+
+            AResp_SerialNumber respSerialNumber = (AResp_SerialNumber) drv.acquireSerialNumber(config.inverterAddress);
+            properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
+
+            AResp_FwVersion respFirmwareVersion = (AResp_FwVersion) drv.acquireFirmwareVersion(config.inverterAddress);
+            properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
+
+            updateProperties(properties);
 
             int refreshRate = config.refreshRate;
             this.scheduledFuture = scheduler.scheduleWithFixedDelay(refreshRunnable, refreshRate, refreshRate, SECONDS);
@@ -225,65 +245,65 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         if (this.bridgeHandler == null) {
             return;
         }
-        //
-        // AuroraDriver drv = this.bridgeHandler.getDriver();
-        // int invAddr = config.inverterAddress;
-        //
-        // String keyLowerCase = key.toLowerCase();
-        //
-        // try {
-        // if (keyLowerCase.startsWith("cumulated")) {
-        // AuroraCumEnergyEnum rng = AuroraCumEnergyEnum.TOTAL;
-        // switch (key) {
-        // case CHANNEL_CUMULATED_ENERGY_DAILY:
-        // rng = AuroraCumEnergyEnum.DAILY;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_LAST7DAYS:
-        // rng = AuroraCumEnergyEnum.LAST7DAYS;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_MONTHLY:
-        // rng = AuroraCumEnergyEnum.MONTHLY;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_PARTIAL:
-        // rng = AuroraCumEnergyEnum.PARTIAL;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_TOTAL:
-        // rng = AuroraCumEnergyEnum.TOTAL;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_WEEKLY:
-        // rng = AuroraCumEnergyEnum.WEEKLY;
-        // break;
-        // case CHANNEL_CUMULATED_ENERGY_YEARLY:
-        // rng = AuroraCumEnergyEnum.YEARLY;
-        // break;
-        // default:
-        // logger.error("unkown range: " + key);
-        // break;
-        // }
-        // AResp_CumulatedEnergy response = (AResp_CumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
-        // updateState(key, new QuantityType<>(new DecimalType(response.get()), SmartHomeUnits.WATT_HOUR));
-        // } else {
-        // AResp_DspData response = (AResp_DspData) drv.acquireDspValue(invAddr, this.map.get(key));
-        // float rspVal = response.getFloatParam();
-        // if (keyLowerCase.contains("temperature")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), SIUnits.CELSIUS));
-        // } else if (keyLowerCase.contains("current")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.AMPERE));
-        // } else if (keyLowerCase.contains("voltage")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.VOLT));
-        // } else if (keyLowerCase.contains("frequency")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.HERTZ));
-        // } else if (keyLowerCase.contains("power")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.WATT));
-        // } else if (keyLowerCase.contains("resistance")) {
-        // updateState(key, new QuantityType<>(new DecimalType(rspVal), MEGA(SmartHomeUnits.OHM)));
-        // } else {
-        // updateState(key, new QuantityType<Dimensionless>(new DecimalType(rspVal), SmartHomeUnits.ONE));
-        // }
-        // }
-        // } catch (Exception e) {
-        // logger.error("error updating value", e);
-        // }
+
+        AuroraDriver drv = this.bridgeHandler.auroraDrv;
+        int invAddr = config.inverterAddress;
+
+        String keyLowerCase = key.toLowerCase();
+
+        try {
+            if (keyLowerCase.startsWith("cumulated")) {
+                AuroraCumEnergyEnum rng = AuroraCumEnergyEnum.TOTAL;
+                switch (key) {
+                    case CHANNEL_CUMULATED_ENERGY_DAILY:
+                        rng = AuroraCumEnergyEnum.DAILY;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_LAST7DAYS:
+                        rng = AuroraCumEnergyEnum.LAST7DAYS;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_MONTHLY:
+                        rng = AuroraCumEnergyEnum.MONTHLY;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_PARTIAL:
+                        rng = AuroraCumEnergyEnum.PARTIAL;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_TOTAL:
+                        rng = AuroraCumEnergyEnum.TOTAL;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_WEEKLY:
+                        rng = AuroraCumEnergyEnum.WEEKLY;
+                        break;
+                    case CHANNEL_CUMULATED_ENERGY_YEARLY:
+                        rng = AuroraCumEnergyEnum.YEARLY;
+                        break;
+                    default:
+                        logger.error("unkown range: " + key);
+                        break;
+                }
+                AResp_CumulatedEnergy response = (AResp_CumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
+                updateState(key, new QuantityType<>(new DecimalType(response.get()), SmartHomeUnits.WATT_HOUR));
+            } else {
+                AResp_DspData response = (AResp_DspData) drv.acquireDspValue(invAddr, this.map.get(key));
+                float rspVal = response.getFloatParam();
+                if (keyLowerCase.contains("temperature")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), SIUnits.CELSIUS));
+                } else if (keyLowerCase.contains("current")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.AMPERE));
+                } else if (keyLowerCase.contains("voltage")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.VOLT));
+                } else if (keyLowerCase.contains("frequency")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.HERTZ));
+                } else if (keyLowerCase.contains("power")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), SmartHomeUnits.WATT));
+                } else if (keyLowerCase.contains("resistance")) {
+                    updateState(key, new QuantityType<>(new DecimalType(rspVal), MEGA(SmartHomeUnits.OHM)));
+                } else {
+                    updateState(key, new QuantityType<Dimensionless>(new DecimalType(rspVal), SmartHomeUnits.ONE));
+                }
+            }
+        } catch (Exception e) {
+            logger.error("error updating value", e);
+        }
     }
 
     public void updateAll() {
@@ -310,12 +330,12 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand for channel {}: {}", channelUID.getId(), command.toString());
         if (command instanceof RefreshType && this.isOnline()) {
-            // String idChannelUID = channelUID.getId();
-            // if (this.map.containsKey(idChannelUID)) {
-            // update(idChannelUID);
-            // } else {
-            // logger.error("Channel not configured: {}", idChannelUID);
-            // }
+            String idChannelUID = channelUID.getId();
+            if (this.map.containsKey(idChannelUID)) {
+                update(idChannelUID);
+            } else {
+                logger.error("Channel not configured: {}", idChannelUID);
+            }
         }
     }
 
