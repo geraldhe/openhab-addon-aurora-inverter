@@ -23,8 +23,7 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraRespon
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jssc.SerialPort;
-import jssc.SerialPortException;
+import gnu.io.RXTXPort;
 
 /***
  * The {@link AuroraInverterInverterHandler} is responsible for handling the serial port connection
@@ -40,7 +39,7 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
     protected AuroraDriver auroraDrv;
 
     @Nullable
-    private SerialPort serialPort;
+    private RXTXPort serialPort;
 
     private AuroraInverterBridgeConfiguration config;
 
@@ -92,16 +91,13 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
         // this.nextPossibleConnectionRetry.add(Calendar.MINUTE, 2);
 
         try {
-            this.serialPort = new SerialPort(config.inverterSerialPort);
-            this.serialPort.openPort();
-            this.serialPort.setParams(config.inverterSerialPortBaudRate, 8, 1, 0);
-            this.auroraDrv.setSerialPort(this.serialPort);
+            // this.serialPort = new RXTXPort(config.inverterSerialPort);
+            // this.serialPort.openPort();
+            // this.serialPort.setParams(config.inverterSerialPortBaudRate, 8, 1, 0);
+            this.auroraDrv.setSerialPort(config.inverterSerialPort, config.inverterSerialPortBaudRate);
             // dont stop it - hold the connection open...
             // _auroraDriver.stop();
             updateStatus(ThingStatus.ONLINE);
-        } catch (SerialPortException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getExceptionType());
-            logger.error("Communication error", e);
         } catch (Exception e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, e.getMessage());
             logger.error("Initialization error", e);
@@ -111,11 +107,7 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
     @Override
     public void dispose() {
         if (this.serialPort != null) {
-            try {
-                this.serialPort.closePort();
-            } catch (SerialPortException e) {
-                logger.error("cant close port", e);
-            }
+            this.serialPort.close();
         }
     }
 }

@@ -17,9 +17,10 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraRespon
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.ResponseErrorEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.utils.FormatStringUtils;
 
-import jssc.SerialPort;
-import jssc.SerialPortException;
-import jssc.SerialPortTimeoutException;
+import gnu.io.PortInUseException;
+import gnu.io.RXTXPort;
+import gnu.io.SerialPort;
+import gnu.io.UnsupportedCommOperationException;
 
 /**
  * Created by sbrega on 17/11/2014.
@@ -47,8 +48,8 @@ public class AuroraDriver {
 
         AuroraRequestPacket auroraRequestPacket = new AuroraRequestPacket(new MB_address(address), auroraRequest);
         Thread.sleep(communicationPause);
-        serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
-        serialPort.writeBytes(auroraRequestPacket.toByteArray());
+        // serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
+        serialPort.getOutputStream().write(auroraRequestPacket.toByteArray());
 
     }
 
@@ -60,9 +61,12 @@ public class AuroraDriver {
             throw new Exception("No Response available for Request: " + auroraRequest);
         }
         try {
-            serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
+            // serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
+            // serialPort.getOutputStream().flush();
             Thread.sleep(receivingPause);
-            byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
+            // byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
+            byte[] buffer = new byte[8];
+            serialPort.getInputStream().read(buffer);
             log.fine("Read buffer (Hex): " + FormatStringUtils.byteArrayToHex(buffer));
             AuroraResponsePacket pkt = new AuroraResponsePacket(result);
             pkt.read(new ByteArrayInputStream(buffer));
@@ -70,8 +74,8 @@ public class AuroraDriver {
             result = (AuroraResponse) pkt.getPdu();
         } catch (IOException ex) {
             result.setErrorCode(ResponseErrorEnum.CRC);
-        } catch (SerialPortTimeoutException e) {
-            result.setErrorCode(ResponseErrorEnum.TIMEOUT);
+            // } catch (SerialPortTimeoutException e) {
+            // result.setErrorCode(ResponseErrorEnum.TIMEOUT);
         } catch (Exception ue) {
             result.setErrorCode(ResponseErrorEnum.UNKNOWN);
         }
@@ -84,13 +88,12 @@ public class AuroraDriver {
     }
 
     public void stop() {
-        try {
-
-            serialPort.closePort();// Close serial port
-        } catch (SerialPortException ex) {
-            System.out.println(ex);
-        }
-
+        // try {
+        // serialPort.closePort();// Close serial port
+        // } catch (SerialPortException ex) {
+        // System.out.println(ex);
+        // }
+        serialPort.close();
     }
 
     public synchronized AuroraResponse acquireVersionId(int address) throws Exception {
@@ -222,20 +225,25 @@ public class AuroraDriver {
 
     }
 
-    public void initSerialPort() throws SerialPortException {
-        serialPort.openPort();// Open serial port
-        serialPort.setParams(19200, 8, 1, 0);// Set params.
+    // public void initSerialPort() {
+    // serialPort.openPort();// Open serial port
+    // serialPort.setParams(19200, 8, 1, 0);// Set params.
+    //
+    // }
+    //
+    // public void setSerialPort(SerialPort aSerialPort) {
+    // this.serialPort = aSerialPort;
+    // }
 
-    }
-
-    public void setSerialPort(SerialPort aSerialPort) {
-        this.serialPort = aSerialPort;
-    }
-
-    public void setSerialPort(String serialPortName, int serialPortBaudRate) throws SerialPortException {
-        serialPort = new SerialPort(serialPortName);
-        serialPort.openPort();// Open serial port
-        serialPort.setParams(serialPortBaudRate, 8, 1, 0);// Set params.
+    public void setSerialPort(String serialPortName, int serialPortBaudRate)
+            throws PortInUseException, UnsupportedCommOperationException {
+        serialPort = new RXTXPort(serialPortName);
+        serialPort.enableReceiveTimeout(serialPortTimeout);
+        serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
+                SerialPort.PARITY_NONE);
+        // serialPort = new SerialPort(serialPortName);
+        // serialPort.openPort();// Open serial port
+        // serialPort.setParams(serialPortBaudRate, 8, 1, 0);// Set params.
 
     }
 

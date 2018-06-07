@@ -1,7 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ClassPath: .,
- lib/javolution-5.5.1.jar,
- lib/jssc-2.8.0.jar
+ lib/javolution-5.5.1.jar
 Bundle-ActivationPolicy: lazy
 Bundle-ManifestVersion: 2
 Bundle-Name: Aurora Inverter Binding
@@ -10,6 +9,7 @@ Bundle-SymbolicName: org.openhab.binding.aurorainverter;singleton:=true
 Bundle-Vendor: openHAB
 Bundle-Version: 2.3.0.qualifier
 Import-Package: 
+ gnu.io;version="3.12.0.OH",
  javax.measure,
  javax.measure.quantity,
  org.eclipse.jdt.annotation;resolution:=optional,
