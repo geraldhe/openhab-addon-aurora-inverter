@@ -9,7 +9,6 @@
 package org.openhab.binding.aurorainverter.handler;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -23,7 +22,9 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraRespon
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gnu.io.RXTXPort;
+import gnu.io.NoSuchPortException;
+import gnu.io.PortInUseException;
+import gnu.io.UnsupportedCommOperationException;
 
 /***
  * The {@link AuroraInverterInverterHandler} is responsible for handling the serial port connection
@@ -38,8 +39,8 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
 
     protected AuroraDriver auroraDrv;
 
-    @Nullable
-    private RXTXPort serialPort;
+    // @Nullable
+    // private RXTXPort serialPort;
 
     private AuroraInverterBridgeConfiguration config;
 
@@ -48,12 +49,11 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
 
         this.auroraDrv = new AuroraDriver(null, new AuroraRequestFactory(), new AuroraResponseFactory());
 
-        logger.debug("Creating bridge...");
+        logger.info("CONSTR AuroraInverterBridgeHandler");
 
         // this.nextPossibleConnectionRetry = Calendar.getInstance();
         // this.nextPossibleConnectionRetry.set(Calendar.YEAR, 1900);
 
-        logger.debug("AuroraInverterHandler.constr ");
         // this.dateFormat.format(this.nextPossibleConnectionRetry.getTime()));
     }
 
@@ -62,9 +62,9 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
         logger.debug("handleCommand for channel {}: {}", channelUID.getId(), command.toString());
     }
 
-    @SuppressWarnings("null")
     @Override
     public void initialize() {
+        logger.info("INIT AuroraInverterBridgeHandler");
         // if (this.nextPossibleConnectionRetry.after(Calendar.getInstance())) {
         // logger.debug("wait some time before trying to connect... "
         // + this.dateFormat.format(this.nextPossibleConnectionRetry.getTime()));
@@ -98,16 +98,24 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
             // dont stop it - hold the connection open...
             // _auroraDriver.stop();
             updateStatus(ThingStatus.ONLINE);
-        } catch (Exception e) {
+        } catch (PortInUseException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, e.getMessage());
-            logger.error("Initialization error", e);
+            logger.error("Port in use", e);
+        } catch (UnsupportedCommOperationException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, e.getMessage());
+            logger.error("UnsupportedCommOperationException", e);
+        } catch (NoSuchPortException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.HANDLER_INITIALIZING_ERROR, e.getMessage());
+            logger.error("NoSuchPortException", e);
         }
     }
 
     @Override
     public void dispose() {
-        if (this.serialPort != null) {
-            this.serialPort.close();
+        logger.info("DESTRUCT AuroraInverterBridgeHandler");
+        if (this.auroraDrv != null) {
+            this.auroraDrv.stop();
+            this.auroraDrv = null;
         }
     }
 }

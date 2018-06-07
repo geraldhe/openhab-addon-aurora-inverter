@@ -86,7 +86,11 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
     public AuroraInverterInverterHandler(Thing thing) {
         super(thing);
 
+        logger.info("CONSTR AuroraInverterBridgeHandler");
+
         this.config = new AuroraInverterInverterConfiguration();
+
+        // this.map.put(CHANNEL_CUMULATED_ENERGY_DAILY, AuroraCumEnergyEnum.DAILY);
 
         this.map.put(CHANNEL_ALIM_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.ALIM_TEMPERATURE_CENTRAL);
         this.map.put(CHANNEL_AVG_GRID_VOLTAGE, AuroraDspRequestEnum.AVERAGE_GRID_VOLTAGE);
@@ -147,7 +151,6 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
                 AuroraDspRequestEnum.POWER_SATURATION_LIMIT_DER_CENTRAL);
         this.map.put(CHANNEL_REFERENCE_RING_BULK_CENTRAL, AuroraDspRequestEnum.REFERENCE_RING_BULK_CENTRAL);
         this.map.put(CHANNEL_SUPERVISOR_TEMPERATURE_CENTRAL, AuroraDspRequestEnum.SUPERVISOR_TEMPERATURE_CENTRAL);
-
         this.map.put(CHANNEL_TEMPERATURE_1_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_1_CENTRAL);
         this.map.put(CHANNEL_TEMPERATURE_2_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_2_CENTRAL);
         this.map.put(CHANNEL_TEMPERATURE_3_CENTRAL, AuroraDspRequestEnum.TEMPERATURE_3_CENTRAL);
@@ -168,7 +171,8 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        logger.debug("AuroraInverterInverterHandler.initialize");
+        logger.info("INIT AuroraInverterBridgeHandler");
+
         this.config = getConfigAs(AuroraInverterInverterConfiguration.class);
 
         if (config.inverterAddress < 0) {
@@ -331,7 +335,7 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         logger.debug("handleCommand for channel {}: {}", channelUID.getId(), command.toString());
         if (command instanceof RefreshType && this.isOnline()) {
             String idChannelUID = channelUID.getId();
-            if (this.map.containsKey(idChannelUID)) {
+            if (this.map.containsKey(idChannelUID) || idChannelUID.toLowerCase().startsWith("cumulated")) {
                 update(idChannelUID);
             } else {
                 logger.error("Channel not configured: {}", idChannelUID);
@@ -356,6 +360,7 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
     @Override
     public void dispose() {
+        logger.info("DESTRUCT AuroraInverterInverterHandler");
         if (scheduledFuture != null) {
             scheduledFuture.cancel(true);
         }

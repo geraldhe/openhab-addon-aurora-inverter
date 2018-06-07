@@ -13,7 +13,6 @@ public class InvCmdCumEnergy extends InverterCommand {
     public InvCmdCumEnergy(int addressParameter, AuroraCumEnergyEnum aPeriod) {
         super(addressParameter);
         period = aPeriod;
-
     }
 
     @Override
@@ -24,12 +23,10 @@ public class InvCmdCumEnergy extends InverterCommand {
             auroraResponse = auroraDriver.acquireCumulatedEnergy(address, period);
 
         } catch (Exception e) {
-            String errorString = e.getMessage();
             log.severe("Bad Response: " + auroraResponse);
         }
 
         return auroraResponse;
-
     }
 
 }

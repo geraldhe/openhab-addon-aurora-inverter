@@ -17,6 +17,9 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraRespon
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.ResponseErrorEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.utils.FormatStringUtils;
 
+import gnu.io.CommPort;
+import gnu.io.CommPortIdentifier;
+import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.RXTXPort;
 import gnu.io.SerialPort;
@@ -36,21 +39,21 @@ public class AuroraDriver {
     private long communicationPause = 50;
 
     public AuroraDriver(SerialPort serialPort, AuroraRequestFactory reqFactory, AuroraResponseFactory respFactory) {
-
         this.serialPort = serialPort;
 
         this.auroraResponseFactory = respFactory;
         this.auroraRequestFactory = reqFactory;
-
     }
 
     protected void sendRequest(int address, MB_PDU auroraRequest) throws Exception {
-
+        if (serialPort == null) {
+            throw new UnsupportedCommOperationException("SerialPort is null!");
+        }
         AuroraRequestPacket auroraRequestPacket = new AuroraRequestPacket(new MB_address(address), auroraRequest);
         Thread.sleep(communicationPause);
         // serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
+        serialPort.getOutputStream().flush();
         serialPort.getOutputStream().write(auroraRequestPacket.toByteArray());
-
     }
 
     private AuroraResponse readResponse(AuroraRequest auroraRequest) throws Exception {
@@ -62,7 +65,7 @@ public class AuroraDriver {
         }
         try {
             // serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
-            // serialPort.getOutputStream().flush();
+            serialPort.getOutputStream().flush();
             Thread.sleep(receivingPause);
             // byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
             byte[] buffer = new byte[8];
@@ -93,7 +96,9 @@ public class AuroraDriver {
         // } catch (SerialPortException ex) {
         // System.out.println(ex);
         // }
-        serialPort.close();
+        if (serialPort != null) {
+            serialPort.close();
+        }
     }
 
     public synchronized AuroraResponse acquireVersionId(int address) throws Exception {
@@ -236,11 +241,35 @@ public class AuroraDriver {
     // }
 
     public void setSerialPort(String serialPortName, int serialPortBaudRate)
-            throws PortInUseException, UnsupportedCommOperationException {
-        serialPort = new RXTXPort(serialPortName);
-        serialPort.enableReceiveTimeout(serialPortTimeout);
-        serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-                SerialPort.PARITY_NONE);
+            throws PortInUseException, UnsupportedCommOperationException, NoSuchPortException {
+        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(serialPortName);
+        if (portIdentifier.isCurrentlyOwned()) {
+            log.info("Error: Port is currently in use");
+        } else {
+            log.info(portIdentifier.getCurrentOwner());
+            CommPort commPort = portIdentifier.open(this.getClass().getName(), serialPortTimeout);
+            if (commPort instanceof RXTXPort) {
+                serialPort = (RXTXPort) commPort;
+                serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
+                        SerialPort.PARITY_NONE);
+
+                // serialPort = new RXTXPort(serialPortName);
+                // serialPort.enableReceiveTimeout(serialPortTimeout);
+                // serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
+                // SerialPort.PARITY_NONE);
+
+                // InputStream in = serialPort.getInputStream();
+                // OutputStream out = serialPort.getOutputStream();
+                //
+                // (new Thread(new SerialReader(in))).start();
+                // (new Thread(new SerialWriter(out))).start();
+
+            } else {
+                this.log.severe(String.format("{} not handled.", (commPort.getClass().getName())));
+            }
+
+        }
+
         // serialPort = new SerialPort(serialPortName);
         // serialPort.openPort();// Open serial port
         // serialPort.setParams(serialPortBaudRate, 8, 1, 0);// Set params.
