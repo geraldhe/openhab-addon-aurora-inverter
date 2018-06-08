@@ -1,124 +1,126 @@
+/**
+ * Copyright (c) 2010-2018 by the respective copyright holders.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.aurorainverter.internal.jaurlib.response;
 
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_PDU;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_code;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.PDUFactory;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_ActualTime;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_CumulatedEnergy;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_DspData;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_FwVersion;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_LastAlarms;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_MFGdate;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_ProductNumber;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_SerialNumber;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_State;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_SystemConfig;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_TimeCounter;
-import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReq_VersionId;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPdu;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbCode;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPduFactory;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqActualTime;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqCumulatedEnergy;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqDspData;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqFwVersion;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqLastAlarms;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqMFGdate;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqProductNumber;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqSerialNumber;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqState;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqSystemConfig;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqTimeCounter;
+import org.openhab.binding.aurorainverter.internal.jaurlib.request.AReqVersionId;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraDspRequestEnum;
 
 /**
- * Created by sbrega on 27/11/2014.
+ * @author Stefano Brega (27/11/14) - Initial contribution
+ * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
-
-public class AuroraResponseFactory extends PDUFactory implements AuroraResponseBuilder {
-
+public class AuroraResponseFactory extends MbPduFactory implements AuroraResponseBuilder {
     public AuroraResponseFactory() {
         super();
     }
 
     @Override
-    protected MB_PDU create(MB_code code) {
+    protected MbPdu create(MbCode code) {
         return null;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_ActualTime request) {
-
-        AResp_ActualTime result = new AResp_ActualTime();
+    public AuroraResponse createResponse(AReqActualTime request) {
+        ARespActualTime result = new ARespActualTime();
         result.setDescription("Inverter Time");
         return result;
-
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_VersionId request) {
-        AResp_VersionId result = new AResp_VersionId();
+    public AuroraResponse createResponse(AReqVersionId request) {
+        ARespVersionId result = new ARespVersionId();
         result.setDescription("Version Number");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_MFGdate request) {
-        AResp_MFGdate result = new AResp_MFGdate();
+    public AuroraResponse createResponse(AReqMFGdate request) {
+        ARespMFGdate result = new ARespMFGdate();
         result.setDescription("Manufacturing Date");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_TimeCounter request) {
-
-        AResp_TimeCounter result = new AResp_TimeCounter();
+    public AuroraResponse createResponse(AReqTimeCounter request) {
+        ARespTimeCounter result = new ARespTimeCounter();
         result.setDescription("Time Counter (days)");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_State request) {
-        AResp_State result = new AResp_State();
+    public AuroraResponse createResponse(AReqState request) {
+        ARespState result = new ARespState();
         result.setDescription("Configuration");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_FwVersion request) {
-        AResp_FwVersion result = new AResp_FwVersion();
+    public AuroraResponse createResponse(AReqFwVersion request) {
+        ARespFwVersion result = new ARespFwVersion();
         result.setDescription("Firmware Version");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_SerialNumber request) {
-        AResp_SerialNumber result = new AResp_SerialNumber();
+    public AuroraResponse createResponse(AReqSerialNumber request) {
+        ARespSerialNumber result = new ARespSerialNumber();
         result.setDescription("Serial Number");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_SystemConfig request) {
-        return new AResp_SysConfig();
+    public AuroraResponse createResponse(AReqSystemConfig request) {
+        return new ARespSysConfig();
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_ProductNumber request) {
-        AResp_ProductNumber result = new AResp_ProductNumber();
+    public AuroraResponse createResponse(AReqProductNumber request) {
+        ARespProductNumber result = new ARespProductNumber();
         result.setDescription("Product Number");
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_CumulatedEnergy request) {
-        AResp_CumulatedEnergy result = new AResp_CumulatedEnergy();
+    public AuroraResponse createResponse(AReqCumulatedEnergy request) {
+        ARespCumulatedEnergy result = new ARespCumulatedEnergy();
         String description = AuroraCumEnergyEnum.fromCode(request.getParam1()).toString() + " Cumulated Energy";
         result.setDescription(description);
         return result;
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_DspData request) {
-        AResp_DspData result = new AResp_DspData();
+    public AuroraResponse createResponse(AReqDspData request) {
+        ARespDspData result = new ARespDspData();
         String description = AuroraDspRequestEnum.fromCode(request.getParam1()).toString();
         result.setDescription(description);
         return result;
-
     }
 
     @Override
-    public AuroraResponse createResponse(AReq_LastAlarms request) {
-        AResp_LastAlarms result = new AResp_LastAlarms();
+    public AuroraResponse createResponse(AReqLastAlarms request) {
+        ARespLastAlarms result = new ARespLastAlarms();
         result.setDescription("Alarms List");
         return result;
     }
-
 }

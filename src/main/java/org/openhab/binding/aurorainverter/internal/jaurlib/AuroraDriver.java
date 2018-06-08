@@ -1,11 +1,18 @@
+/**
+ * Copyright (c) 2010-2018 by the respective copyright holders.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.aurorainverter.internal.jaurlib;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.logging.Logger;
 
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_PDU;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_address;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPdu;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbAddress;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraDspRequestEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraRequest;
@@ -16,20 +23,20 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraRespon
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraResponsePacket;
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.ResponseErrorEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.utils.FormatStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import gnu.io.CommPort;
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
-import gnu.io.RXTXPort;
-import gnu.io.SerialPort;
-import gnu.io.UnsupportedCommOperationException;
+import jssc.SerialPort;
+import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 
 /**
- * Created by sbrega on 17/11/2014.
+ * @author Stefano Brega (17/11/14) - Initial contribution
+ * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
 public class AuroraDriver {
-    Logger log = Logger.getLogger(getClass().getSimpleName());
+    private Logger logger = LoggerFactory.getLogger(AuroraDriver.class);
+
     protected int serialPortTimeout = 2000;
     protected final AuroraRequestFactory auroraRequestFactory;
     protected final AuroraResponseFactory auroraResponseFactory;
@@ -45,40 +52,33 @@ public class AuroraDriver {
         this.auroraRequestFactory = reqFactory;
     }
 
-    protected void sendRequest(int address, MB_PDU auroraRequest) throws Exception {
-        if (serialPort == null) {
-            throw new UnsupportedCommOperationException("SerialPort is null!");
-        }
-        AuroraRequestPacket auroraRequestPacket = new AuroraRequestPacket(new MB_address(address), auroraRequest);
+    protected void sendRequest(int address, MbPdu auroraRequest) throws Exception {
+        AuroraRequestPacket auroraRequestPacket = new AuroraRequestPacket(new MbAddress(address), auroraRequest);
         Thread.sleep(communicationPause);
-        // serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
-        serialPort.getOutputStream().flush();
-        serialPort.getOutputStream().write(auroraRequestPacket.toByteArray());
+        serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
+        serialPort.writeBytes(auroraRequestPacket.toByteArray());
     }
 
     private AuroraResponse readResponse(AuroraRequest auroraRequest) throws Exception {
-
         AuroraResponse result = auroraRequest.create(auroraResponseFactory);
 
         if (result == null) {
             throw new Exception("No Response available for Request: " + auroraRequest);
         }
+
         try {
-            // serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
-            serialPort.getOutputStream().flush();
+            serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
             Thread.sleep(receivingPause);
-            // byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
-            byte[] buffer = new byte[8];
-            serialPort.getInputStream().read(buffer);
-            log.fine("Read buffer (Hex): " + FormatStringUtils.byteArrayToHex(buffer));
+            byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
+            logger.trace("Read buffer (Hex): " + FormatStringUtils.byteArrayToHex(buffer));
             AuroraResponsePacket pkt = new AuroraResponsePacket(result);
             pkt.read(new ByteArrayInputStream(buffer));
             store((AuroraResponse) pkt.getPdu());
             result = (AuroraResponse) pkt.getPdu();
         } catch (IOException ex) {
             result.setErrorCode(ResponseErrorEnum.CRC);
-            // } catch (SerialPortTimeoutException e) {
-            // result.setErrorCode(ResponseErrorEnum.TIMEOUT);
+        } catch (SerialPortTimeoutException e) {
+            result.setErrorCode(ResponseErrorEnum.TIMEOUT);
         } catch (Exception ue) {
             result.setErrorCode(ResponseErrorEnum.UNKNOWN);
         }
@@ -91,189 +91,141 @@ public class AuroraDriver {
     }
 
     public void stop() {
-        // try {
-        // serialPort.closePort();// Close serial port
-        // } catch (SerialPortException ex) {
-        // System.out.println(ex);
-        // }
-        if (serialPort != null) {
-            serialPort.close();
+        try {
+            if (serialPort != null) {
+                serialPort.closePort();// Close serial port
+            }
+        } catch (SerialPortException ex) {
+            logger.error("error closing port {}: {}", ex.getPortName(), ex.getMessage());
         }
     }
 
     public synchronized AuroraResponse acquireVersionId(int address) throws Exception {
-
-        log.info("Sending acquireVersionId to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_VersionId();
+        logger.debug("Sending acquireVersionId to: {}", address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqVersionId();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response: {}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireDspValue(int invAddress, AuroraDspRequestEnum requestedValue)
             throws Exception {
-        log.info("Sending acquireDspValue (" + requestedValue + ") to: " + invAddress);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_DspData(requestedValue);
+        logger.debug("Sending acquireDspValue (" + requestedValue + ") to: " + invAddress);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqDspData(requestedValue);
         sendRequest(invAddress, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response: {}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireCumulatedEnergy(int address, AuroraCumEnergyEnum requestedValue)
             throws Exception {
-        log.info("Sending Cumulated Energy Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_CumulatedEnergy(requestedValue);
+        logger.debug("Sending Cumulated Energy Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqCumulatedEnergy(requestedValue);
         sendRequest(address, auroraRequest);
         AuroraResponse response = readResponse(auroraRequest);
-        log.info("Received response: " + response);
+        logger.debug("Received response: " + response);
         return response;
-
     }
 
     public synchronized AuroraResponse acquireState(int address) throws Exception {
-        log.info("Sending State Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_State();
+        logger.debug("Sending State Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqState();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireFirmwareVersion(int address) throws Exception {
-        log.info("Sending Firmware Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_FwVersion();
+        logger.debug("Sending Firmware Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqFwVersion();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireMFGdate(int address) throws Exception {
-        log.info("Sending Manufacturing Date Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_MFGdate();
+        logger.debug("Sending Manufacturing Date Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqMfgDate();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireSystemConfig(int address) throws Exception {
-        log.info("Sending System Configuration Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_SystemConfig();
+        logger.debug("Sending System Configuration Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqSystemConfig();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireSerialNumber(int address) throws Exception {
-        log.info("Sending Serial Number Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_SerialNumber();
+        logger.debug("Sending Serial Number Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqSerialNumber();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireProductNumber(int address) throws Exception {
-        log.info("Sending Product Number Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_ProductNumber();
+        logger.debug("Sending Product Number Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqProductNumber();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireTimeCounter(int address) throws Exception {
-        log.info("Sending Product Number Request to: " + address);
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_TimeCounter();
+        logger.debug("Sending Product Number Request to: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqTimeCounter();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireActualTime(int address) throws Exception {
-
         return acquireData(address);
-
     }
 
     public synchronized AuroraResponse acquireData(int address) throws Exception {
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_ActualTime();
-        log.info("Sending Request " + auroraRequest + "to address: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqActualTime();
+        logger.debug("Sending Request " + auroraRequest + "to address: " + address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
     public synchronized AuroraResponse acquireLastAlarms(int address) throws Exception {
-        AuroraRequest auroraRequest = auroraRequestFactory.createAReq_AlarmsList();
-        log.info("Sending Request " + auroraRequest + " to address: " + address);
+        AuroraRequest auroraRequest = auroraRequestFactory.createAReqAlarmsList();
+        logger.debug("Sending Request " + auroraRequest + " to address: " + address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
+        logger.debug("Received response{}", responseMsg);
         return responseMsg;
-
     }
 
-    // public void initSerialPort() {
-    // serialPort.openPort();// Open serial port
-    // serialPort.setParams(19200, 8, 1, 0);// Set params.
-    //
-    // }
-    //
-    // public void setSerialPort(SerialPort aSerialPort) {
-    // this.serialPort = aSerialPort;
-    // }
-
-    public void setSerialPort(String serialPortName, int serialPortBaudRate)
-            throws PortInUseException, UnsupportedCommOperationException, NoSuchPortException {
-        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(serialPortName);
-        if (portIdentifier.isCurrentlyOwned()) {
-            log.info("Error: Port is currently in use");
-        } else {
-            log.info(portIdentifier.getCurrentOwner());
-            CommPort commPort = portIdentifier.open(this.getClass().getName(), serialPortTimeout);
-            if (commPort instanceof RXTXPort) {
-                serialPort = (RXTXPort) commPort;
-                serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-                        SerialPort.PARITY_NONE);
-
-                // serialPort = new RXTXPort(serialPortName);
-                // serialPort.enableReceiveTimeout(serialPortTimeout);
-                // serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-                // SerialPort.PARITY_NONE);
-
-                // InputStream in = serialPort.getInputStream();
-                // OutputStream out = serialPort.getOutputStream();
-                //
-                // (new Thread(new SerialReader(in))).start();
-                // (new Thread(new SerialWriter(out))).start();
-
-            } else {
-                this.log.severe(String.format("{} not handled.", (commPort.getClass().getName())));
-            }
-
-        }
-
-        // serialPort = new SerialPort(serialPortName);
-        // serialPort.openPort();// Open serial port
-        // serialPort.setParams(serialPortBaudRate, 8, 1, 0);// Set params.
-
+    public void initSerialPort() throws SerialPortException {
+        serialPort.openPort(); // Open serial port
+        serialPort.setParams(19200, 8, 1, 0); // Set params.
     }
 
+    public void setSerialPort(SerialPort aSerialPort) {
+        this.serialPort = aSerialPort;
+    }
+
+    public void setSerialPort(String serialPortName, int serialPortBaudRate) throws SerialPortException {
+        serialPort = new SerialPort(serialPortName);
+        serialPort.openPort(); // Open serial port
+        serialPort.setParams(serialPortBaudRate, 8, 1, 0); // Set params.
+    }
 }

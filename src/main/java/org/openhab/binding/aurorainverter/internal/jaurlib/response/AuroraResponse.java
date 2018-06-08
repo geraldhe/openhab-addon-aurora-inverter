@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2010-2018 by the respective copyright holders.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.aurorainverter.internal.jaurlib.response;
 
 import java.io.ByteArrayInputStream;
@@ -7,27 +15,31 @@ import java.io.OutputStream;
 
 import org.openhab.binding.aurorainverter.internal.jaurlib.FloatBigEndianStruct;
 import org.openhab.binding.aurorainverter.internal.jaurlib.LongBigEndianStruct;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_PDU;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_Struct;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_code;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MB_data;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPdu;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbStruct;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbCode;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbData;
 
 import javolution.io.Struct;
 
-public abstract class AuroraResponse extends MB_PDU {
+/**
+ * @author Stefano Brega - Initial contribution
+ * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
+ */
+public abstract class AuroraResponse extends MbPdu {
 
     protected String description = "";
     protected ResponseErrorEnum errorCode = ResponseErrorEnum.NONE;
 
     public abstract String getValue();
 
-    class _Data extends MB_data {
+    class DataInternal extends MbData {
         public Unsigned8 subCode;
-        _Bytes byteArray;
+        BytesInternal byteArray;
 
-        _Data() {
+        DataInternal() {
             subCode = new Unsigned8();
-            byteArray = new _Bytes();
+            byteArray = new BytesInternal();
         }
 
         @Override
@@ -48,26 +60,22 @@ public abstract class AuroraResponse extends MB_PDU {
         }
     }
 
-    class _Bytes extends MB_data {
-
+    class BytesInternal extends MbData {
         final Unsigned8[] bytes;
 
-        _Bytes() {
+        BytesInternal() {
             bytes = array(new Struct.Unsigned8[4]);
         }
-
     }
 
-    public AuroraResponse(MB_code code) {
+    public AuroraResponse(MbCode code) {
         this.code = code;
-        this.data = new _Data();
-
+        this.data = new DataInternal();
     }
 
     public AuroraResponse() {
-        this.code = new MB_code(0);
-        this.data = new _Data();
-
+        this.code = new MbCode(0);
+        this.data = new DataInternal();
     }
 
     public void setDescription(String description) {
@@ -75,92 +83,83 @@ public abstract class AuroraResponse extends MB_PDU {
     }
 
     public void setSubCode(char val) {
-        ((_Data) data).subCode.set((short) val);
+        ((DataInternal) data).subCode.set((short) val);
     }
 
     public void setParam1(char val) {
-        ((_Data) data).byteArray.bytes[0].set((short) val);
+        ((DataInternal) data).byteArray.bytes[0].set((short) val);
     }
 
     public void setParam2(char val) {
-        ((_Data) data).byteArray.bytes[1].set((short) val);
+        ((DataInternal) data).byteArray.bytes[1].set((short) val);
     }
 
     public void setParam3(char val) {
-        ((_Data) data).byteArray.bytes[2].set((short) val);
+        ((DataInternal) data).byteArray.bytes[2].set((short) val);
     }
 
     public void setParam4(char val) {
-        ((_Data) data).byteArray.bytes[3].set((short) val);
+        ((DataInternal) data).byteArray.bytes[3].set((short) val);
     }
 
     public void setFloatParam(float val) {
-
-        MB_Struct struct = new FloatBigEndianStruct(val);
+        MbStruct struct = new FloatBigEndianStruct(val);
         try {
             ByteArrayInputStream iStream = new ByteArrayInputStream(struct.toByteArray());
-            ((_Data) this.data).byteArray.read(iStream);
+            ((DataInternal) this.data).byteArray.read(iStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException - {} | {}", e.getMessage(), e.getStackTrace().toString());
         }
-
     }
 
     public float getFloatParam() {
-
         float result = (float) -9999.9;
         FloatBigEndianStruct struct = new FloatBigEndianStruct(0);
         try {
-            ByteArrayInputStream iStream = new ByteArrayInputStream(((_Data) this.data).byteArray.toByteArray());
+            ByteArrayInputStream iStream = new ByteArrayInputStream(((DataInternal) this.data).byteArray.toByteArray());
             struct.read(iStream);
             result = struct.val.get();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException - {} | {}", e.getMessage(), e.getStackTrace().toString());
         }
         return result;
-
     }
 
     public void setLongParam(long val) {
-
-        MB_Struct struct = new LongBigEndianStruct(val);
+        MbStruct struct = new LongBigEndianStruct(val);
         try {
             ByteArrayInputStream iStream = new ByteArrayInputStream(struct.toByteArray());
-            ((_Data) this.data).byteArray.read(iStream);
+            ((DataInternal) this.data).byteArray.read(iStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException - {} | {}", e.getMessage(), e.getStackTrace().toString());
         }
-
     }
 
     public long getLongParam() throws IOException {
-
         LongBigEndianStruct struct = new LongBigEndianStruct(0);
-
-        ByteArrayInputStream iStream = new ByteArrayInputStream(((_Data) this.data).byteArray.toByteArray());
+        ByteArrayInputStream iStream = new ByteArrayInputStream(((DataInternal) this.data).byteArray.toByteArray());
         struct.read(iStream);
         return struct.val.get();
-
     }
 
     public char getParam1() {
-        return (char) ((_Data) data).byteArray.bytes[0].get();
+        return (char) ((DataInternal) data).byteArray.bytes[0].get();
     }
 
     public char getParam2() {
-        return (char) ((_Data) data).byteArray.bytes[1].get();
+        return (char) ((DataInternal) data).byteArray.bytes[1].get();
     }
 
     public char getParam3() {
-        return (char) ((_Data) data).byteArray.bytes[2].get();
+        return (char) ((DataInternal) data).byteArray.bytes[2].get();
     }
 
     public char getParam4() {
-        return (char) ((_Data) data).byteArray.bytes[3].get();
+        return (char) ((DataInternal) data).byteArray.bytes[3].get();
     }
 
     public char getSubCode() {
-        return (char) ((_Data) data).subCode.get();
+        return (char) ((DataInternal) data).subCode.get();
     }
 
     public ResponseErrorEnum getErrorCode() {
@@ -170,5 +169,4 @@ public abstract class AuroraResponse extends MB_PDU {
     public void setErrorCode(ResponseErrorEnum code) {
         errorCode = code;
     }
-
 }

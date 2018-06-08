@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2010-2018 by the respective copyright holders.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.aurorainverter.internal.jaurlib.cmd;
 
 import org.openhab.binding.aurorainverter.internal.jaurlib.AuroraDriver;
@@ -5,7 +13,8 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEner
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraResponse;
 
 /**
- * Created by stefano on 27/12/15.
+ * @author Stefano Brega (27/12/15) - Initial contribution
+ * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
 public class InvCmdCumEnergy extends InverterCommand {
     public AuroraCumEnergyEnum period;
@@ -17,16 +26,13 @@ public class InvCmdCumEnergy extends InverterCommand {
 
     @Override
     public AuroraResponse execute(AuroraDriver auroraDriver) {
-
         AuroraResponse auroraResponse = null;
         try {
             auroraResponse = auroraDriver.acquireCumulatedEnergy(address, period);
-
         } catch (Exception e) {
-            log.severe("Bad Response: " + auroraResponse);
+            logger.error("bad response: {}, {}", auroraResponse, e.getMessage());
         }
 
         return auroraResponse;
     }
-
 }

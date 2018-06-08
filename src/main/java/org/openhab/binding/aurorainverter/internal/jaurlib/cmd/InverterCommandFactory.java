@@ -1,18 +1,27 @@
+/**
+ * Copyright (c) 2010-2018 by the respective copyright holders.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.aurorainverter.internal.jaurlib.cmd;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraDspRequestEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Created by stefano on 28/12/15.
+ * @author Stefano Brega (28/12/15) - Initial contribution
+ * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
 public class InverterCommandFactory {
-
-    Logger log = Logger.getLogger(getClass().getSimpleName());
+    protected Logger logger = LoggerFactory.getLogger(InverterCommand.class);
 
     Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<>();
     Map<String, AuroraDspRequestEnum> mapDspCmd = new HashMap<>();
@@ -39,7 +48,6 @@ public class InverterCommandFactory {
     }
 
     public InverterCommand create(String opCodeParameter, String subCodeParameter, int addressParameter) {
-
         InverterCommand result = null;
         switch (opCodeParameter) {
             case "cumEnergy":
@@ -63,7 +71,7 @@ public class InverterCommandFactory {
                 result = new InvCmdFirmwareVersion(addressParameter);
                 break;
             case "manufacturingDate":
-                result = new InvCmdMFGdate(addressParameter);
+                result = new InvCmdMfgDate(addressParameter);
                 break;
             case "sysConfig":
                 result = new InvCmdSysConfig(addressParameter);
@@ -78,12 +86,9 @@ public class InverterCommandFactory {
                 result = new InvCmdLastAlarms(addressParameter);
                 break;
             default:
-                log.severe("Received unknown inverter command, with opcode: " + opCodeParameter);
-
+                logger.error("Received unknown inverter command, with opcode: {}", opCodeParameter);
         }
 
         return result;
-
     }
-
 }
