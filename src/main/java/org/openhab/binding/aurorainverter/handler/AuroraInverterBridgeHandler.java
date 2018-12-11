@@ -79,9 +79,12 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
     @Override
     public void dispose() {
         logger.debug("DESTRUCT AuroraInverter-BRIDGE-Handler");
+
         if (this.auroraDrv != null) {
             this.auroraDrv.stop();
             this.auroraDrv = null;
         }
+
+        super.dispose();
     }
 }

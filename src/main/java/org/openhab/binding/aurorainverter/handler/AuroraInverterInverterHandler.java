@@ -8,16 +8,16 @@
  */
 package org.openhab.binding.aurorainverter.handler;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.eclipse.smarthome.core.library.unit.MetricPrefix.*;
 import static org.openhab.binding.aurorainverter.AuroraInverterBindingConstants.*;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.measure.quantity.Dimensionless;
 
@@ -28,6 +28,7 @@ import org.eclipse.smarthome.core.library.types.QuantityType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -64,8 +65,6 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    protected final List<ChannelUID> measuredChannels = new ArrayList<ChannelUID>();
-
     private final Map<String, AuroraDspRequestEnum> mapDsp = new HashMap<String, AuroraDspRequestEnum>();
     private final Map<String, AuroraCumEnergyEnum> mapCumEnergy = new HashMap<String, AuroraCumEnergyEnum>();
 
@@ -77,13 +76,6 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
     @Nullable
     private ScheduledFuture<?> schedulerUpdates;
 
-    private final Runnable runnableUpdates = new Runnable() {
-        @Override
-        public void run() {
-            updateAll();
-        }
-    };
-
     @Nullable
     private ScheduledFuture<?> schedulerReconnect;
 
@@ -91,13 +83,16 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         @Override
         public void run() {
             if (getThing().getStatus() == ThingStatus.OFFLINE) {
+                logger.debug("trying to reconnect");
                 // try reconnecting.
                 initialize();
                 if (getThing().getStatus() == ThingStatus.ONLINE && schedulerReconnect != null) {
                     // stop scheduler
                     logger.debug("Stopping reconnect-scheduler");
-                    schedulerReconnect.cancel(false);
-                    schedulerReconnect = null;
+                    if (schedulerReconnect != null) {
+                        schedulerReconnect.cancel(false);
+                        schedulerReconnect = null;
+                    }
                 }
             }
         }
@@ -222,57 +217,59 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         this.bridgeHandler = (AuroraInverterBridgeHandler) brdge.getHandler();
 
         try {
-            if (this.bridgeHandler == null) {
+            if (this.bridgeHandler != null) {
+                AuroraDriver drv = this.bridgeHandler.auroraDrv;
+                AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
+
+                logger.debug("Result from inverter: " + respVersion.toString());
+
+                ResponseErrorEnum errorCode = respVersion.getErrorCode();
+                if (errorCode != ResponseErrorEnum.NONE) {
+                    logger.error("Inverter not online: " + errorCode.toString());
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
+                    return;
+                }
+
+                Map<String, String> properties = editProperties();
+                if (respVersion instanceof ARespVersionId) {
+                    ARespVersionId respVersionCasted = (ARespVersionId) respVersion;
+                    properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
+                    properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
+                    properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
+                    properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
+                }
+
+                ARespMFGdate respMfgDate = (ARespMFGdate) drv.acquireMFGdate(config.inverterAddress);
+                properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
+
+                ARespProductNumber respProdNumber = (ARespProductNumber) drv
+                        .acquireProductNumber(config.inverterAddress);
+                properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
+
+                ARespSerialNumber respSerialNumber = (ARespSerialNumber) drv
+                        .acquireSerialNumber(config.inverterAddress);
+                properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
+
+                ARespFwVersion respFirmwareVersion = (ARespFwVersion) drv
+                        .acquireFirmwareVersion(config.inverterAddress);
+                properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
+
+                updateProperties(properties);
+
+                startAutomaticRefresh();
+
+                updateStatus(ThingStatus.ONLINE);
+            } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE, "no bridge handler?!");
                 return;
             }
-
-            AuroraDriver drv = this.bridgeHandler.auroraDrv;
-            AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
-
-            logger.debug("Result from inverter: " + respVersion.toString());
-
-            ResponseErrorEnum errorCode = respVersion.getErrorCode();
-            if (errorCode != ResponseErrorEnum.NONE) {
-                logger.error("Inverter not online: " + errorCode.toString());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
-                return;
-            }
-
-            Map<String, String> properties = editProperties();
-            if (respVersion instanceof ARespVersionId) {
-                ARespVersionId respVersionCasted = (ARespVersionId) respVersion;
-                properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
-                properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
-                properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
-                properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
-            }
-
-            ARespMFGdate respMfgDate = (ARespMFGdate) drv.acquireMFGdate(config.inverterAddress);
-            properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
-
-            ARespProductNumber respProdNumber = (ARespProductNumber) drv.acquireProductNumber(config.inverterAddress);
-            properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
-
-            ARespSerialNumber respSerialNumber = (ARespSerialNumber) drv.acquireSerialNumber(config.inverterAddress);
-            properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
-
-            ARespFwVersion respFirmwareVersion = (ARespFwVersion) drv.acquireFirmwareVersion(config.inverterAddress);
-            properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
-
-            updateProperties(properties);
-
-            int refreshRate = config.refreshRate;
-            schedulerUpdates = scheduler.scheduleWithFixedDelay(runnableUpdates, refreshRate, refreshRate, SECONDS);
-
-            updateStatus(ThingStatus.ONLINE);
         } catch (Exception e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             logger.error("communication error", e);
         }
     }
 
-    public void update(String key) {
+    public void update(ChannelUID channelUID) {
         Bridge brdge = this.getBridge();
         Thing thing = this.getThing();
         if (brdge == null || brdge.getStatus() != ThingStatus.ONLINE || thing.getStatus() != ThingStatus.ONLINE) {
@@ -283,85 +280,83 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
             return;
         }
 
-        if (this.bridgeHandler == null) {
-            return;
-        }
+        if (this.bridgeHandler != null) {
+            AuroraDriver drv = this.bridgeHandler.auroraDrv;
+            int invAddr = config.inverterAddress;
 
-        AuroraDriver drv = this.bridgeHandler.auroraDrv;
-        int invAddr = config.inverterAddress;
+            String channelId = channelUID.getId();
 
-        String keyLowerCase = key.toLowerCase();
-
-        try {
-            if (mapCumEnergy.containsKey(key)) {
-                AuroraCumEnergyEnum rng = mapCumEnergy.get(key);
-                ARespCumulatedEnergy response = (ARespCumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
-                DecimalType kwh = new DecimalType(response.get() / 1000.0f);
-                updateState(key, new QuantityType<>(kwh, KILO(SmartHomeUnits.WATT_HOUR)));
-            } else if (mapDsp.containsKey(key)) {
-                ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, this.mapDsp.get(key));
-                DecimalType rspVal = new DecimalType(response.getFloatParam());
-                if (keyLowerCase.contains("temperature")) {
-                    updateState(key, new QuantityType<>(rspVal, SIUnits.CELSIUS));
-                } else if (keyLowerCase.contains("current")) {
-                    updateState(key, new QuantityType<>(rspVal, SmartHomeUnits.AMPERE));
-                } else if (keyLowerCase.contains("voltage")) {
-                    updateState(key, new QuantityType<>(rspVal, SmartHomeUnits.VOLT));
-                } else if (keyLowerCase.contains("frequency")) {
-                    updateState(key, new QuantityType<>(rspVal, SmartHomeUnits.HERTZ));
-                } else if (keyLowerCase.contains("power")) {
-                    updateState(key, new QuantityType<>(rspVal, SmartHomeUnits.WATT));
-                } else if (keyLowerCase.contains("resistance")) {
-                    updateState(key, new QuantityType<>(rspVal, MEGA(SmartHomeUnits.OHM)));
+            try {
+                if (mapCumEnergy.containsKey(channelId)) {
+                    AuroraCumEnergyEnum rng = mapCumEnergy.get(channelId);
+                    ARespCumulatedEnergy response = (ARespCumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
+                    DecimalType kwh = new DecimalType(response.get() / 1000.0f);
+                    updateState(channelUID, new QuantityType<>(kwh, KILO(SmartHomeUnits.WATT_HOUR)));
+                } else if (mapDsp.containsKey(channelId)) {
+                    ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, this.mapDsp.get(channelId));
+                    DecimalType rspVal = new DecimalType(response.getFloatParam());
+                    if (channelId.contains("temperature")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, SIUnits.CELSIUS));
+                    } else if (channelId.contains("current")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.AMPERE));
+                    } else if (channelId.contains("voltage")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.VOLT));
+                    } else if (channelId.contains("frequency")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.HERTZ));
+                    } else if (channelId.contains("power")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.WATT));
+                    } else if (channelId.contains("resistance")) {
+                        updateState(channelUID, new QuantityType<>(rspVal, MEGA(SmartHomeUnits.OHM)));
+                    } else {
+                        updateState(channelUID, new QuantityType<Dimensionless>(rspVal, SmartHomeUnits.ONE));
+                    }
                 } else {
-                    updateState(key, new QuantityType<Dimensionless>(rspVal, SmartHomeUnits.ONE));
+                    logger.error("unknown channel to update: {}", channelUID);
                 }
-            } else {
-                logger.error("unknown channel to update: {}", key);
+            } catch (Exception e) {
+                logger.error("error updating value {}\r\n{}", channelUID, e.toString());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
-        } catch (Exception e) {
-            logger.error("error updating value {}\r\n{}", key, e.toString());
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
     }
 
-    public void updateAll() {
-        for (ChannelUID key : this.measuredChannels) {
-            update(key.getId());
-        }
-    }
+    // source: OneWireGPIOHandler.java
+    private void startAutomaticRefresh() {
+        Runnable refresher = () -> {
+            List<Channel> channels = getThing().getChannels();
+            for (Channel channel : channels) {
+                if (isLinked(channel.getUID().getId())) {
+                    update(channel.getUID());
+                }
+            }
+        };
 
-    @Override
-    public void channelLinked(ChannelUID channelUID) {
-        super.channelLinked(channelUID);
-        measuredChannels.add(channelUID);
-    }
-
-    @Override
-    public void channelUnlinked(ChannelUID channelUID) {
-        super.channelUnlinked(channelUID);
-        measuredChannels.remove(channelUID);
+        schedulerUpdates = scheduler.scheduleWithFixedDelay(refresher, 0, config.refreshRate, TimeUnit.SECONDS);
+        logger.debug("Start automatic refresh every {} seconds", config.refreshRate);
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand for channel {}: {}", channelUID.getId(), command.toString());
         if (command instanceof RefreshType) {
-            update(channelUID.getId());
+            update(channelUID);
         }
     }
 
     @Override
     public void dispose() {
         logger.debug("DESTRUCT AuroraInverter-INVERTER-Handler");
-        if (schedulerUpdates != null) {
-            schedulerUpdates.cancel(false);
-            schedulerUpdates = null;
+
+        if (schedulerReconnect != null) {
+            schedulerReconnect.cancel(false);
+            schedulerReconnect = null;
         }
 
         if (schedulerUpdates != null) {
             schedulerUpdates.cancel(true);
             schedulerUpdates = null;
         }
+
+        super.dispose();
     }
 }
