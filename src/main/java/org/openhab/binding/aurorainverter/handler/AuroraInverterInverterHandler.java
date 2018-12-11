@@ -285,6 +285,7 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
             int invAddr = config.inverterAddress;
 
             String channelId = channelUID.getId();
+            String channelIdLowerCase = channelId.toLowerCase();
 
             try {
                 if (mapCumEnergy.containsKey(channelId)) {
@@ -295,17 +296,17 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
                 } else if (mapDsp.containsKey(channelId)) {
                     ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, this.mapDsp.get(channelId));
                     DecimalType rspVal = new DecimalType(response.getFloatParam());
-                    if (channelId.contains("temperature")) {
+                    if (channelIdLowerCase.contains("temperature")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SIUnits.CELSIUS));
-                    } else if (channelId.contains("current")) {
+                    } else if (channelIdLowerCase.contains("current")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.AMPERE));
-                    } else if (channelId.contains("voltage")) {
+                    } else if (channelIdLowerCase.contains("voltage")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.VOLT));
-                    } else if (channelId.contains("frequency")) {
+                    } else if (channelIdLowerCase.contains("frequency")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.HERTZ));
-                    } else if (channelId.contains("power")) {
+                    } else if (channelIdLowerCase.contains("power")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.WATT));
-                    } else if (channelId.contains("resistance")) {
+                    } else if (channelIdLowerCase.contains("resistance")) {
                         updateState(channelUID, new QuantityType<>(rspVal, MEGA(SmartHomeUnits.OHM)));
                     } else {
                         updateState(channelUID, new QuantityType<Dimensionless>(rspVal, SmartHomeUnits.ONE));
