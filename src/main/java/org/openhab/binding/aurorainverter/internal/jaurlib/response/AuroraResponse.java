@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.aurorainverter.internal.jaurlib.response;
 
@@ -13,12 +17,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.aurorainverter.internal.jaurlib.FloatBigEndianStruct;
 import org.openhab.binding.aurorainverter.internal.jaurlib.LongBigEndianStruct;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPdu;
-import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbStruct;
 import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbCode;
 import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbData;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbPdu;
+import org.openhab.binding.aurorainverter.internal.jaurlib.modbus.MbStruct;
 
 import javolution.io.Struct;
 
@@ -26,11 +32,13 @@ import javolution.io.Struct;
  * @author Stefano Brega - Initial contribution
  * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
+@NonNullByDefault
 public abstract class AuroraResponse extends MbPdu {
 
     protected String description = "";
     protected ResponseErrorEnum errorCode = ResponseErrorEnum.NONE;
 
+    @Nullable
     public abstract String getValue();
 
     class DataInternal extends MbData {
@@ -43,12 +51,12 @@ public abstract class AuroraResponse extends MbPdu {
         }
 
         @Override
-        public int read(InputStream in) throws IOException {
+        public int read(@Nullable InputStream in) throws IOException {
             return super.read(in) + byteArray.read(in);
         }
 
         @Override
-        public void write(OutputStream out) throws IOException {
+        public void write(@Nullable OutputStream out) throws IOException {
             super.write(out);
             byteArray.write(out);
         }

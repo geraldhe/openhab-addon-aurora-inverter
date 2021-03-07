@@ -12,28 +12,22 @@
  */
 package org.openhab.binding.aurorainverter.internal.jaurlib.response;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-
 /**
- * @author Stefano Brega (02/12/14) - Initial contribution
- * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
+ * @author Gerald Heilmann - Initial contribution
  */
-@NonNullByDefault
-public class ARespDspData extends AuroraResponse {
+public class ARespNone extends AuroraResponse {
 
     @Override
-    @Nullable
     public String getValue() {
-        return String.valueOf(getFloatParam());
+        return "no value!";
     }
 
-    public ARespDspData() {
+    public ARespNone() {
         super();
     }
 
     @Override
     public String toString() {
-        return description.isEmpty() ? super.toString() : description + ": " + this.getFloatParam();
+        return "empty response (insted of null)";
     }
 }

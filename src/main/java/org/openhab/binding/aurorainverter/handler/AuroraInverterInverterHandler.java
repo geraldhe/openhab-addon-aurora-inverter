@@ -1,16 +1,19 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.aurorainverter.handler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.eclipse.smarthome.core.library.unit.MetricPrefix.*;
-import static org.openhab.binding.aurorainverter.AuroraInverterBindingConstants.*;
+import static org.openhab.binding.aurorainverter.internal.AuroraInverterBindingConstants.*;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -23,19 +26,6 @@ import javax.measure.quantity.Dimensionless;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.library.types.DecimalType;
-import org.eclipse.smarthome.core.library.types.QuantityType;
-import org.eclipse.smarthome.core.library.unit.SIUnits;
-import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
-import org.eclipse.smarthome.core.thing.Bridge;
-import org.eclipse.smarthome.core.thing.Channel;
-import org.eclipse.smarthome.core.thing.ChannelUID;
-import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.eclipse.smarthome.core.types.Command;
-import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.aurorainverter.internal.AuroraInverterInverterConfiguration;
 import org.openhab.binding.aurorainverter.internal.jaurlib.AuroraDriver;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
@@ -49,6 +39,20 @@ import org.openhab.binding.aurorainverter.internal.jaurlib.response.ARespSerialN
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.ARespVersionId;
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.AuroraResponse;
 import org.openhab.binding.aurorainverter.internal.jaurlib.response.ResponseErrorEnum;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.QuantityType;
+import org.openhab.core.library.unit.MetricPrefix;
+import org.openhab.core.library.unit.SIUnits;
+import org.openhab.core.library.unit.Units;
+import org.openhab.core.thing.Bridge;
+import org.openhab.core.thing.Channel;
+import org.openhab.core.thing.ChannelUID;
+import org.openhab.core.thing.Thing;
+import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.ThingStatusDetail;
+import org.openhab.core.thing.binding.BaseThingHandler;
+import org.openhab.core.types.Command;
+import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,51 +221,58 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
         this.bridgeHandler = (AuroraInverterBridgeHandler) brdge.getHandler();
 
         try {
-            if (this.bridgeHandler != null) {
-                AuroraDriver drv = this.bridgeHandler.auroraDrv;
-                AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
-
-                logger.debug("Result from inverter: " + respVersion.toString());
-
-                ResponseErrorEnum errorCode = respVersion.getErrorCode();
-                if (errorCode != ResponseErrorEnum.NONE) {
-                    logger.error("Inverter not online: " + errorCode.toString());
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
-                    return;
-                }
-
-                Map<String, String> properties = editProperties();
-                if (respVersion instanceof ARespVersionId) {
-                    ARespVersionId respVersionCasted = (ARespVersionId) respVersion;
-                    properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
-                    properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
-                    properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
-                    properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
-                }
-
-                ARespMFGdate respMfgDate = (ARespMFGdate) drv.acquireMFGdate(config.inverterAddress);
-                properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
-
-                ARespProductNumber respProdNumber = (ARespProductNumber) drv
-                        .acquireProductNumber(config.inverterAddress);
-                properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
-
-                ARespSerialNumber respSerialNumber = (ARespSerialNumber) drv
-                        .acquireSerialNumber(config.inverterAddress);
-                properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
-
-                ARespFwVersion respFirmwareVersion = (ARespFwVersion) drv
-                        .acquireFirmwareVersion(config.inverterAddress);
-                properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
-
-                updateProperties(properties);
-
-                startAutomaticRefresh();
-
-                updateStatus(ThingStatus.ONLINE);
-            } else {
+            if (this.bridgeHandler == null) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE, "no bridge handler?!");
                 return;
+            } else if (this.bridgeHandler != null) {
+                AuroraDriver drv = this.bridgeHandler.auroraDrv;
+                if (drv == null) {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE,
+                            "BridgeHandler.auroraDrv is null!");
+                    logger.error("BridgeHandler.auroraDrv is null!");
+                    return;
+                } else {
+                    logger.debug("fetching inverter version...");
+                    AuroraResponse respVersion = drv.acquireVersionId(config.inverterAddress);
+                    logger.debug("Result from inverter: {}", respVersion);
+
+                    ResponseErrorEnum errorCode = respVersion.getErrorCode();
+                    if (errorCode != ResponseErrorEnum.NONE) {
+                        logger.error("Inverter not online: {}", errorCode);
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, errorCode.toString());
+                        return;
+                    }
+
+                    Map<String, String> properties = editProperties();
+                    if (respVersion instanceof ARespVersionId) {
+                        ARespVersionId respVersionCasted = (ARespVersionId) respVersion;
+                        properties.put(DEVICE_PROPERTY_MODELNAME, respVersionCasted.getModelName());
+                        properties.put(DEVICE_PROPERTY_NATIONALITY, respVersionCasted.getNationality());
+                        properties.put(DEVICE_PROPERTY_TRANSFORMER, respVersionCasted.getTransformerInfo());
+                        properties.put(DEVICE_PROPERTY_TYPE, respVersionCasted.getType());
+                    }
+
+                    ARespMFGdate respMfgDate = (ARespMFGdate) drv.acquireMFGdate(config.inverterAddress);
+                    properties.put(DEVICE_PROPERTY_MFGDATE, dateFormat.format(respMfgDate.get()));
+
+                    ARespProductNumber respProdNumber = (ARespProductNumber) drv
+                            .acquireProductNumber(config.inverterAddress);
+                    properties.put(DEVICE_PROPERTY_PRODUCTNUMBER, respProdNumber.get());
+
+                    ARespSerialNumber respSerialNumber = (ARespSerialNumber) drv
+                            .acquireSerialNumber(config.inverterAddress);
+                    properties.put(DEVICE_PROPERTY_SERIALNUMBER, respSerialNumber.get());
+
+                    ARespFwVersion respFirmwareVersion = (ARespFwVersion) drv
+                            .acquireFirmwareVersion(config.inverterAddress);
+                    properties.put(DEVICE_PROPERTY_FIRMWAREVERSION, respFirmwareVersion.get());
+
+                    updateProperties(properties);
+
+                    startAutomaticRefresh();
+
+                    updateStatus(ThingStatus.ONLINE);
+                }
             }
         } catch (Exception e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
@@ -282,6 +293,10 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
 
         if (this.bridgeHandler != null) {
             AuroraDriver drv = this.bridgeHandler.auroraDrv;
+            if (drv == null) {
+                logger.error("drv is null!");
+                return;
+            }
             int invAddr = config.inverterAddress;
 
             String channelId = channelUID.getId();
@@ -290,26 +305,40 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
             try {
                 if (mapCumEnergy.containsKey(channelId)) {
                     AuroraCumEnergyEnum rng = mapCumEnergy.get(channelId);
+                    if (rng == null) {
+                        logger.error("rng is null!");
+                        return;
+                    }
                     ARespCumulatedEnergy response = (ARespCumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
-                    DecimalType kwh = new DecimalType(response.get() / 1000.0f);
-                    updateState(channelUID, new QuantityType<>(kwh, KILO(SmartHomeUnits.WATT_HOUR)));
+                    Long wh = response.get();
+                    if (wh == null) {
+                        logger.error("wh is null!");
+                        return;
+                    }
+                    DecimalType kwh = new DecimalType(wh / 1000.0f);
+                    updateState(channelUID, new QuantityType<>(kwh, MetricPrefix.KILO(Units.WATT_HOUR)));
                 } else if (mapDsp.containsKey(channelId)) {
-                    ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, this.mapDsp.get(channelId));
+                    AuroraDspRequestEnum val = this.mapDsp.get(channelId);
+                    if (val == null) {
+                        logger.error("val is null!");
+                        return;
+                    }
+                    ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, val);
                     DecimalType rspVal = new DecimalType(response.getFloatParam());
                     if (channelIdLowerCase.contains("temperature")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SIUnits.CELSIUS));
                     } else if (channelIdLowerCase.contains("current")) {
-                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.AMPERE));
+                        updateState(channelUID, new QuantityType<>(rspVal, Units.AMPERE));
                     } else if (channelIdLowerCase.contains("voltage")) {
-                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.VOLT));
+                        updateState(channelUID, new QuantityType<>(rspVal, Units.VOLT));
                     } else if (channelIdLowerCase.contains("frequency")) {
-                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.HERTZ));
+                        updateState(channelUID, new QuantityType<>(rspVal, Units.HERTZ));
                     } else if (channelIdLowerCase.contains("power")) {
-                        updateState(channelUID, new QuantityType<>(rspVal, SmartHomeUnits.WATT));
+                        updateState(channelUID, new QuantityType<>(rspVal, Units.WATT));
                     } else if (channelIdLowerCase.contains("resistance")) {
-                        updateState(channelUID, new QuantityType<>(rspVal, MEGA(SmartHomeUnits.OHM)));
+                        updateState(channelUID, new QuantityType<>(rspVal, MetricPrefix.MEGA(Units.OHM)));
                     } else {
-                        updateState(channelUID, new QuantityType<Dimensionless>(rspVal, SmartHomeUnits.ONE));
+                        updateState(channelUID, new QuantityType<Dimensionless>(rspVal, Units.ONE));
                     }
                 } else {
                     logger.error("unknown channel to update: {}", channelUID);

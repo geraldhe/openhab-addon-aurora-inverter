@@ -1,1 +1,7 @@
-/target/
+target/
+.settings/
+.factorypath
+.classpath
+.project
+src/main/history/dependencies.xml
+.vscode/

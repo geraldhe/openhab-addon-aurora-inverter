@@ -1,16 +1,21 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.aurorainverter.internal.jaurlib.cmd;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraCumEnergyEnum;
 import org.openhab.binding.aurorainverter.internal.jaurlib.request.AuroraDspRequestEnum;
 import org.slf4j.Logger;
@@ -20,8 +25,9 @@ import org.slf4j.LoggerFactory;
  * @author Stefano Brega (28/12/15) - Initial contribution
  * @author Gerald Heilmann (08/06/18) - adaptations for using with OpenHAB
  */
+@NonNullByDefault
 public class InverterCommandFactory {
-    protected Logger logger = LoggerFactory.getLogger(InverterCommand.class);
+    protected Logger logger = LoggerFactory.getLogger(InverterCommandFactory.class);
 
     Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<>();
     Map<String, AuroraDspRequestEnum> mapDspCmd = new HashMap<>();
@@ -48,47 +54,40 @@ public class InverterCommandFactory {
     }
 
     public InverterCommand create(String opCodeParameter, String subCodeParameter, int addressParameter) {
-        InverterCommand result = null;
         switch (opCodeParameter) {
             case "cumEnergy":
                 AuroraCumEnergyEnum period = mapEnergyCmd.get(subCodeParameter);
-                result = new InvCmdCumEnergy(addressParameter, period);
-                break;
+                if (period != null) {
+                    return new InvCmdCumEnergy(addressParameter, period);
+                }
+                throw new IllegalStateException("Received cumEnergy command - but result was null!");
             case "dspData":
                 AuroraDspRequestEnum magnitude = mapDspCmd.get(subCodeParameter);
-                result = new InvCmdDspData(addressParameter, magnitude);
-                break;
+                if (magnitude != null) {
+                    return new InvCmdDspData(addressParameter, magnitude);
+                }
+                throw new IllegalStateException("Received dspData command - but result was null!");
             case "productNumber":
-                result = new InvCmdProductNumber(addressParameter);
-                break;
+                return new InvCmdProductNumber(addressParameter);
             case "serialNumber":
-                result = new InvCmdSerialNumber(addressParameter);
-                break;
+                return new InvCmdSerialNumber(addressParameter);
             case "versionNumber":
-                result = new InvCmdVersionNumber(addressParameter);
-                break;
+                return new InvCmdVersionNumber(addressParameter);
             case "firmwareNumber":
-                result = new InvCmdFirmwareVersion(addressParameter);
-                break;
+                return new InvCmdFirmwareVersion(addressParameter);
             case "manufacturingDate":
-                result = new InvCmdMfgDate(addressParameter);
-                break;
+                return new InvCmdMfgDate(addressParameter);
             case "sysConfig":
-                result = new InvCmdSysConfig(addressParameter);
-                break;
+                return new InvCmdSysConfig(addressParameter);
             case "timeCounter":
-                result = new InvCmdTimeCounter(addressParameter);
-                break;
+                return new InvCmdTimeCounter(addressParameter);
             case "actualTime":
-                result = new InvCmdActualTime(addressParameter);
-                break;
+                return new InvCmdActualTime(addressParameter);
             case "lastAlarms":
-                result = new InvCmdLastAlarms(addressParameter);
-                break;
+                return new InvCmdLastAlarms(addressParameter);
             default:
                 logger.error("Received unknown inverter command, with opcode: {}", opCodeParameter);
+                throw new IllegalStateException("Received unknown inverter command!");
         }
-
-        return result;
     }
 }

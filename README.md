@@ -1,4 +1,6 @@
-# <bindingName> Binding
+# AuroraInverter Binding
+
+add serial transport: `feature:install openhab-transport-serial`
 
 _Give some details about what this binding is meant for - a protocol, system, specific device._
 
@@ -8,7 +10,7 @@ _If possible, provide some resources like pictures, a YouTube video, etc. to giv
 
 _Please describe the different supported things / devices within this section._
 _Which different types are supported, which models were tested etc.?_
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
+_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
 
 ## Discovery
 
@@ -22,12 +24,12 @@ _If your binding requires or supports general configuration settings, please cre
 # Configuration for the Philips Hue Binding
 #
 # Default secret key for the pairing of the Philips Hue Bridge.
-# It has to be between 10-40 (alphanumeric) characters 
+# It has to be between 10-40 (alphanumeric) characters
 # This may be changed by the user for security reasons.
-secret=EclipseSmartHome
+secret=openHABSecret
 ```
 
-_Note that it is planned to generate some part of this based on the information that is available within ```ESH-INF/binding``` of your binding._
+_Note that it is planned to generate some part of this based on the information that is available within ```src/main/resources/OH-INF/binding``` of your binding._
 
 _If your binding does not offer any generic configurations, you can remove this section completely._
 
@@ -35,13 +37,17 @@ _If your binding does not offer any generic configurations, you can remove this 
 
 _Describe what is needed to manually configure a thing, either through the (Paper) UI or via a thing-file. This should be mainly about its mandatory and optional configuration parameters. A short example entry for a thing file can help!_
 
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
+_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
 
 ## Channels
 
 _Here you should provide information about available channel types, what their meaning is and how they can be used._
 
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
+_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
+
+| channel  | type   | description                  |
+|----------|--------|------------------------------|
+| control  | Switch | This is the control channel  |
 
 ## Full Example
 
