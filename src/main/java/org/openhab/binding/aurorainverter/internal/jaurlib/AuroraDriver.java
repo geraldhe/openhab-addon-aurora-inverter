@@ -54,7 +54,7 @@ public class AuroraDriver {
 
     private OutputStream output;
 
-    private InputStream input;
+    private InputStream inputStream;
 
     @Nullable
     protected AuroraResponse msgReceived = null;
@@ -67,6 +67,7 @@ public class AuroraDriver {
         this.serialPort = serialPortIdentifier.open(AuroraDriver.class.getCanonicalName(), 2000);
         this.serialPort.setSerialPortParams(serialPortBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
                 SerialPort.PARITY_NONE);
+        this.serialPort.enableReceiveTimeout(serialPortTimeout);
 
         OutputStream outputStr = this.serialPort.getOutputStream();
         if (outputStr == null) {
@@ -75,11 +76,11 @@ public class AuroraDriver {
             this.output = outputStr;
         }
 
-        InputStream inputStr = this.serialPort.getInputStream();
-        if (inputStr == null) {
+        InputStream inputStream = this.serialPort.getInputStream();
+        if (inputStream == null) {
             throw new IOException();
         } else {
-            this.input = inputStr;
+            this.inputStream = inputStream;
         }
 
         this.auroraResponseFactory = respFactory;
@@ -88,37 +89,46 @@ public class AuroraDriver {
 
     protected void sendRequest(int address, MbPdu auroraRequest) throws Exception {
         AuroraRequestPacket auroraRequestPacket = new AuroraRequestPacket(new MbAddress(address), auroraRequest);
+
         Thread.sleep(communicationPause);
-        OutputStream out = this.output;
-        out.flush();
-        out.write(auroraRequestPacket.toByteArray());
+
+        while (this.inputStream.available() > 0) {
+            int bytesToSkip = this.inputStream.available();
+
+            byte[] bytesSkipped = this.inputStream.readNBytes(bytesToSkip);
+            logger.warn(
+                    "there were {} bytes (content: {}) already waiting for reading - before we sent the command. we skipped these.",
+                    bytesToSkip, FormatStringUtils.byteArrayToHex(bytesSkipped));
+        }
+
+        this.output.write(auroraRequestPacket.toByteArray());
+        this.output.flush();
+        logger.trace("sent request.");
     }
 
     private AuroraResponse readResponse(AuroraRequest auroraRequest) throws IllegalStateException {
         AuroraResponse result = auroraRequest.create(auroraResponseFactory);
 
         if (result == null) {
-            throw new IllegalStateException("No Response available for Request: " + auroraRequest);
+            throw new IllegalStateException("Couldn't create a response-object for request: " + auroraRequest);
         }
 
         try {
-
-            // war: serialPort.purgePort(SerialPort.PURGE_RXCLEAR);
             Thread.sleep(receivingPause);
-            // war byte[] buffer = serialPort.readBytes(8, serialPortTimeout);
-
-            byte[] buffer = input.readNBytes(8);
+            byte[] buffer = inputStream.readNBytes(8);
             logger.trace("Read buffer (Hex): {}", FormatStringUtils.byteArrayToHex(buffer));
+
             AuroraResponsePacket pkt = new AuroraResponsePacket(result);
             pkt.read(new ByteArrayInputStream(buffer));
             store((AuroraResponse) pkt.getPdu());
             result = (AuroraResponse) pkt.getPdu();
         } catch (IOException ex) {
-            logger.warn("error while reading response: {}", ex.getMessage());
+            logger.warn("i/o-error while reading response for request {}: {}", auroraRequest.code.getValue(),
+                    ex.getMessage());
             result.setErrorCode(ResponseErrorEnum.CRC);
-            // } catch (SerialPortTimeoutException e) {
-            // result.setErrorCode(ResponseErrorEnum.TIMEOUT);
         } catch (Exception ue) {
+            logger.warn("error while reading response for request {}: {}", auroraRequest.code.getValue(),
+                    ue.getMessage());
             result.setErrorCode(ResponseErrorEnum.UNKNOWN);
         }
 
@@ -131,7 +141,7 @@ public class AuroraDriver {
 
     public void stop() {
         try {
-            input.close();
+            inputStream.close();
         } catch (IOException e) {
             logger.debug("An error occured while closing the serial input stream", e);
         }
@@ -154,7 +164,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireVersionId(int address) throws Exception {
-        logger.debug("Sending acquireVersionId to: {}", address);
+        logger.debug("Sending acquireVersionId to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqVersionId();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -164,7 +174,7 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireDspValue(int invAddress, AuroraDspRequestEnum requestedValue)
             throws Exception {
-        logger.debug("Sending acquireDspValue ({}) to: {}", requestedValue, invAddress);
+        logger.debug("Sending acquireDspValue ({}) to inverter with address {}", requestedValue, invAddress);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqDspData(requestedValue);
         sendRequest(invAddress, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -174,7 +184,7 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireCumulatedEnergy(int address, AuroraCumEnergyEnum requestedValue)
             throws Exception {
-        logger.debug("Sending Cumulated Energy Request to: {}", address);
+        logger.debug("Sending Cumulated Energy Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqCumulatedEnergy(requestedValue);
         sendRequest(address, auroraRequest);
         AuroraResponse response = readResponse(auroraRequest);
@@ -183,7 +193,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireState(int address) throws Exception {
-        logger.debug("Sending State Request to: {}", address);
+        logger.debug("Sending State Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqState();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -192,7 +202,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireFirmwareVersion(int address) throws Exception {
-        logger.debug("Sending Firmware Request to: {}", address);
+        logger.debug("Sending Firmware Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqFwVersion();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -201,7 +211,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireMFGdate(int address) throws Exception {
-        logger.debug("Sending Manufacturing Date Request to: {}", address);
+        logger.debug("Sending Manufacturing Date Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqMfgDate();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -210,7 +220,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireSystemConfig(int address) throws Exception {
-        logger.debug("Sending System Configuration Request to: {}", address);
+        logger.debug("Sending System Configuration Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqSystemConfig();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -219,7 +229,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireSerialNumber(int address) throws Exception {
-        logger.debug("Sending Serial Number Request to: {}", address);
+        logger.debug("Sending Serial Number Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqSerialNumber();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -228,7 +238,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireProductNumber(int address) throws Exception {
-        logger.debug("Sending Product Number Request to: {}", address);
+        logger.debug("Sending Product Number Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqProductNumber();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -237,7 +247,7 @@ public class AuroraDriver {
     }
 
     public synchronized AuroraResponse acquireTimeCounter(int address) throws Exception {
-        logger.debug("Sending Time Counter Request to: {}", address);
+        logger.debug("Sending Time Counter Request to inverter with address {}", address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqTimeCounter();
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -251,7 +261,7 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireData(int address) throws Exception {
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqActualTime();
-        logger.debug("Sending Request {} to address {}", auroraRequest, address);
+        logger.debug("Sending Request {} to inverter with address {}", auroraRequest, address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
         logger.debug("Received response: {}", responseMsg);
@@ -260,7 +270,7 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireLastAlarms(int address) throws Exception {
         AuroraRequest auroraRequest = auroraRequestFactory.createAReqAlarmsList();
-        logger.debug("Sending Request {} to address {}", auroraRequest, address);
+        logger.debug("Sending Request {} to inverter with address {}", auroraRequest, address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
         logger.debug("Received response: {}", responseMsg);

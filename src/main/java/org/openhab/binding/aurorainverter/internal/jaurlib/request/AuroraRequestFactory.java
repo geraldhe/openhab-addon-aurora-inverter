@@ -30,10 +30,10 @@ public class AuroraRequestFactory extends MbPduFactory {
 
     public AuroraRequestFactory() {
         initMap();
-        revertMap();
+        reverseMap();
     }
 
-    protected void revertMap() {
+    protected void reverseMap() {
         for (Integer code : mapCode2ClassMsg.keySet()) {
             mapClassMsg2Code.put(mapCode2ClassMsg.get(code), code);
         }

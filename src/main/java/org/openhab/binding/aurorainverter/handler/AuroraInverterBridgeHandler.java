@@ -90,7 +90,8 @@ public class AuroraInverterBridgeHandler extends BaseBridgeHandler {
                             "Serial port " + identifier + " does not exist!");
 
                     String identifiers = serialPortManager.getIdentifiers()
-                            .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString();
+                            .collect(StringBuilder::new, (x, y) -> x.append(y.getName()), StringBuilder::append)
+                            .toString();
                     logger.error("Serial port {} does not exist! choose one of these: {}", identifier, identifiers);
 
                     return;

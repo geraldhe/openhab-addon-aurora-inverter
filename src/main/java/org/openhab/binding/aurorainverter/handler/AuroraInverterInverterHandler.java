@@ -310,6 +310,10 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
                         return;
                     }
                     ARespCumulatedEnergy response = (ARespCumulatedEnergy) drv.acquireCumulatedEnergy(invAddr, rng);
+                    if (response.getErrorCode() != ResponseErrorEnum.NONE) {
+                        logger.error("failed with error {} - so we don't update the state!", response.getErrorCode());
+                        return;
+                    }
                     Long wh = response.get();
                     if (wh == null) {
                         logger.error("wh is null!");
@@ -324,6 +328,11 @@ public class AuroraInverterInverterHandler extends BaseThingHandler {
                         return;
                     }
                     ARespDspData response = (ARespDspData) drv.acquireDspValue(invAddr, val);
+                    if (response.getErrorCode() != ResponseErrorEnum.NONE) {
+                        logger.error("failed with error {} - so we don't update the state!", response.getErrorCode());
+                        return;
+                    }
+
                     DecimalType rspVal = new DecimalType(response.getFloatParam());
                     if (channelIdLowerCase.contains("temperature")) {
                         updateState(channelUID, new QuantityType<>(rspVal, SIUnits.CELSIUS));
